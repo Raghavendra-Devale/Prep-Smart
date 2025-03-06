@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Communication Basics</title>
+    <!-- Bootstrap 3 CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <!-- Bootstrap core CSS -->
+ <link href="{{ url_for('static', filename='assets/css/bootstrap.min.css') }}" rel="stylesheet" />
+
+ <!-- Animation library for notifications -->
+ <link href="{{ url_for('static', filename='assets/css/animate.min.css') }}" rel="stylesheet" />
+ 
+ <!-- Light Bootstrap Table core CSS -->
+ <link href="{{ url_for('static', filename='assets/css/light-bootstrap-dashboard.css') }}" rel="stylesheet" />
+ 
+ <!-- CSS for Demo Purpose -->
+ <link href="{{ url_for('static', filename='assets/css/demo.css') }}" rel="stylesheet" />
+ 
+ <!-- Fonts and icons -->
+ <link href="http://maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet">
+ <link href="https://fonts.googleapis.com/css?family=Roboto:400,700,300" rel="stylesheet" type="text/css">
+ <link href="{{ url_for('static', filename='assets/css/pe-icon-7-stroke.css') }}" rel="stylesheet" />
+</head>
+<body>
+    <div class="container">
+        <div class="page-header">
+            <h1>Communication Basics <small>Essential Skills for Better Interaction</small></h1>
+        </div>
+
+        <div class="row">
+            <!-- Active Listening Panel -->
+            <div class="col-md-4">
+                <div class="panel panel-primary">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">Active Listening</h3>
+                    </div>
+                    <div class="panel-body">
+                        <ul class="list-group">
+                            <li class="list-group-item">Maintain eye contact</li>
+                            <li class="list-group-item">Show interest through body language</li>
+                            <li class="list-group-item">Ask clarifying questions</li>
+                            <li class="list-group-item">Avoid interrupting</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Verbal Communication Panel -->
+            <div class="col-md-4">
+                <div class="panel panel-success">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">Verbal Communication</h3>
+                    </div>
+                    <div class="panel-body">
+                        <ul class="list-group">
+                            <li class="list-group-item">Speak clearly and concisely</li>
+                            <li class="list-group-item">Use appropriate tone</li>
+                            <li class="list-group-item">Choose words carefully</li>
+                            <li class="list-group-item">Be mindful of pace</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Non-Verbal Communication Panel -->
+            <div class="col-md-4">
+                <div class="panel panel-info">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">Non-Verbal Communication</h3>
+                    </div>
+                    <div class="panel-body">
+                        <ul class="list-group">
+                            <li class="list-group-item">Facial expressions</li>
+                            <li class="list-group-item">Body posture</li>
+                            <li class="list-group-item">Hand gestures</li>
+                            <li class="list-group-item">Personal space</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Practice Section -->
+        <div class="well">
+            <h3>Practice Exercise</h3>
+            <form class="form-horizontal">
+                <div class="form-group">
+                    <label class="col-sm-2 control-label">Scenario:</label>
+                    <div class="col-sm-10">
+                        <select class="form-control">
+                            <option>Professional meeting</option>
+                            <option>Casual conversation</option>
+                            <option>Public speaking</option>
+                            <option>Job interview</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-2 control-label">Your Response:</label>
+                    <div class="col-sm-10">
+                        <textarea class="form-control" rows="3" placeholder="Write how you would handle this scenario..."></textarea>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="col-sm-offset-2 col-sm-10">
+                        <button type="submit" class="btn btn-primary">Submit Response</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Bootstrap 3 JavaScript Dependencies -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+</body>
+</html>

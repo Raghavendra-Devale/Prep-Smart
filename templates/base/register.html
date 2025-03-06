@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Placement Preparation</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .register-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 500px;
+            padding: 2.5rem;
+        }
+
+        .form-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .form-header h1 {
+            color: #2d3748;
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-header p {
+            color: #718096;
+            font-size: 0.95rem;
+        }
+
+        .role-selector {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .role-option {
+            flex: 1;
+        }
+
+        .role-option input[type="radio"] {
+            display: none;
+        }
+
+        .role-option label {
+            display: block;
+            padding: 1rem;
+            text-align: center;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            color: #4a5568;
+        }
+
+        .role-option input[type="radio"]:checked + label {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .role-option label:hover {
+            border-color: #667eea;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            color: #4a5568;
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            color: #2d3748;
+        }
+
+        .form-group input:focus {
+            border-color: #667eea;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .register-btn {
+            width: 100%;
+            padding: 1rem;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 1rem;
+        }
+
+        .register-btn:hover {
+            background: #5a67d8;
+            transform: translateY(-1px);
+        }
+
+        .login-link {
+            text-align: center;
+            margin-top: 1.5rem;
+            color: #4a5568;
+            font-size: 0.95rem;
+        }
+
+        .login-link a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .login-link a:hover {
+            text-decoration: underline;
+        }
+
+        .flash-message {
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            font-size: 0.95rem;
+        }
+
+        .flash-message.success {
+            background: #c6f6d5;
+            color: #2f855a;
+        }
+
+        .flash-message.error {
+            background: #fed7d7;
+            color: #c53030;
+        }
+
+        @media (max-width: 480px) {
+            .register-container {
+                padding: 2rem;
+            }
+        }
+
+        select.form-control {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 1rem;
+            color: #2d3748;
+            background-color: white;
+            appearance: none;
+        }
+
+        #student-fields, #company-fields {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .form-group select {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            color: #2d3748;
+            background-color: white;
+        }
+
+        .form-group select:focus {
+            border-color: #667eea;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .year-btn:hover {
+            background: #5a67d8;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="register-container">
+        <div class="form-header">
+            <h1>Create Account</h1>
+            <p>Get started with your placement preparation journey</p>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-message {{ category }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form action="{{ url_for('register') }}" method="POST">
+            <div class="role-selector">
+                <div class="role-option">
+                    <input type="radio" id="student" name="role" value="student" checked>
+                    <label for="student">Student</label>
+                </div>
+                <div class="role-option">
+                    <input type="radio" id="company" name="role" value="company">
+                    <label for="company">Company</label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input type="email" id="email" name="email" required placeholder="Enter your email">
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required placeholder="Create a password">
+            </div>
+
+            <div id="student-fields">
+                <div class="form-group">
+                    <label for="name">Full Name</label>
+                    <input type="text" id="name" name="name" required placeholder="Enter your full name">
+                </div>
+
+                <div class="form-group">
+                    <label for="phone">Phone Number</label>
+                    <input type="tel" id="phone" name="phone" required placeholder="Enter your phone number">
+                </div>
+
+                <div class="form-group">
+                    <label for="department">Department</label>
+                    <select id="department" name="department" required>
+                        <option value="">Select Department</option>
+                        <option value="CSE">Computer Science</option>
+                        <option value="ISE">Information Science</option>
+                        <option value="ECE">Electronics & Communication</option>
+                        <option value="EEE">Electrical & Electronics</option>
+                        <option value="MECH">Mechanical</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="graduation_year">Graduation Year</label>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="number" id="graduation_year" name="graduation_year" required placeholder="Enter graduation year" min="2024" max="2030" style="flex: 1;">
+                        <button type="button" onclick="setCurrentYear()" class="year-btn" style="padding: 0.75rem 1rem; background: #667eea; color: white; border: none; border-radius: 10px; cursor: pointer; white-space: nowrap; transition: all 0.3s ease;">Set Current</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="company-fields" style="display: none;">
+                <div class="form-group">
+                    <label for="company_name">Company Name</label>
+                    <input type="text" id="company_name" name="company_name" placeholder="Enter company name">
+                </div>
+
+                <div class="form-group">
+                    <label for="industry">Industry</label>
+                    <input type="text" id="industry" name="industry" placeholder="Enter industry type">
+                </div>
+            </div>
+
+            <button type="submit" class="register-btn">Create Account</button>
+        </form>
+
+        <div class="login-link">
+            Already have an account? <a href="{{ url_for('login') }}">Login here</a>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const studentFields = document.getElementById('student-fields');
+        const companyFields = document.getElementById('company-fields');
+        const roleInputs = document.getElementsByName('role');
+
+        function toggleFields() {
+            if (document.getElementById('student').checked) {
+                studentFields.style.display = 'block';
+                companyFields.style.display = 'none';
+            } else {
+                studentFields.style.display = 'none';
+                companyFields.style.display = 'block';
+            }
+        }
+
+        roleInputs.forEach(input => input.addEventListener('change', toggleFields));
+        toggleFields(); // Initial state
+    });
+
+    function setCurrentYear() {
+        const currentYear = new Date().getFullYear();
+        document.getElementById('graduation_year').value = currentYear;
+    }
+    </script>
+</body>
+</html>

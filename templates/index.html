@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Placement Preparation</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        /* Navbar Styles */
+        .navbar {
+            background: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .nav-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1a73e8;
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .nav-links a {
+            color: #333;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: #1a73e8;
+        }
+
+        .auth-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .auth-button {
+            padding: 0.5rem 1.5rem;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .login-btn {
+            color: #1a73e8;
+            border: 2px solid #1a73e8;
+        }
+
+        .login-btn:hover {
+            background: #1a73e8;
+            color: white;
+        }
+
+        .register-btn {
+            background: #1a73e8;
+            color: white;
+        }
+
+        .register-btn:hover {
+            background: #1557b0;
+        }
+
+        /* Hero Section */
+        .hero {
+            padding: 8rem 2rem 4rem;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            text-align: center;
+        }
+
+        .hero h1 {
+            font-size: 2.5rem;
+            color: #333;
+            margin-bottom: 1rem;
+        }
+
+        .hero p {
+            color: #666;
+            max-width: 600px;
+            margin: 0 auto 2rem;
+        }
+
+        /* Team Section */
+        .team-section {
+            padding: 4rem 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .team-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .team-grid .team-member:last-child {
+            grid-column: 2;
+            margin: 0 auto;
+        }
+
+        .team-member {
+            text-align: center;
+            padding: 1.5rem;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .team-member:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .member-image {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            margin-bottom: 1rem;
+            object-fit: cover;
+            border: 3px solid #f0f0f0;
+        }
+
+        .member-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 0.3rem;
+        }
+
+        .member-role {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 0.8rem;
+        }
+
+        .social-links {
+            display: flex;
+            justify-content: center;
+            gap: 0.8rem;
+        }
+
+        .social-links a {
+            color: #1a73e8;
+            text-decoration: none;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: #f8f9fa;
+        }
+
+        .social-links a:hover {
+            color: white;
+            background: #1a73e8;
+        }
+
+        /* Guide Section */
+        .guide-section {
+            padding: 4rem 2rem;
+            background: #f8f9fa;
+        }
+
+        .guide-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .guide-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .guide-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .guide-card h3 {
+            color: #333;
+            margin-bottom: 1rem;
+        }
+
+        .guide-card p {
+            color: #666;
+            margin-bottom: 1rem;
+        }
+
+        .guide-card a {
+            color: #1a73e8;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 992px) {
+            .team-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .team-grid .team-member:last-child {
+                grid-column: 1 / span 2;
+                max-width: 300px;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .team-grid {
+                grid-template-columns: 1fr;
+            }
+            .team-grid .team-member:last-child {
+                grid-column: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/" class="logo">PlacementPrep</a>
+            <div class="nav-links">
+                <a href="#home">Home</a>
+                <a href="#team">Team</a>
+                <a href="#guide">Guide</a>
+                <a href="#contact">Contact</a>
+            </div>
+            <div class="auth-buttons">
+                <a href="{{ url_for('login') }}" class="auth-button login-btn">Login</a>
+                <a href="{{ url_for('register') }}" class="auth-button register-btn">Register</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero" id="home">
+        <h1>Prepare for Your Dream Placement</h1>
+        <p>Master DSA, improve your communication skills, and ace your technical interviews with our comprehensive preparation platform.</p>
+    </section>
+
+    <!-- Team Section -->
+    <section class="team-section" id="team">
+        <h2 class="section-title">Meet Our Team</h2>
+        <div class="team-grid">
+            <!-- Team Member 1 -->
+            <div class="team-member">
+                <img src="{{ url_for('static', filename='img/faces/face-0.jpg') }}" alt="Team Member" class="member-image">
+                <h3 class="member-name">Aravinda T V</h3>
+                <p class="member-role">Guide</p>
+                <div class="social-links">
+                    <a href="#"><i class="fab fa-linkedin"></i></a>
+                    <a href="#"><i class="fab fa-github"></i></a>
+                    <a href="#"><i class="fab fa-twitter"></i></a>
+                </div>
+            </div>
+
+            <!-- Team Member 2 -->
+            <div class="team-member">
+                <img src="{{ url_for('static', filename='img/faces/Devale.jpg') }}" alt="Team Member" class="member-image">
+                <h3 class="member-name">Raghavendra Devale</h3>
+                <p class="member-role">Team Lead </p>
+                <div class="social-links">
+                    <a href="www.linkedin.com/in/raghavendra-devale"><i class="fab fa-linkedin"></i></a>
+                    <a href="#"><i class="fab fa-github"></i></a>
+                    <a href="#"><i class="fab fa-twitter"></i></a>
+                </div>
+            </div>
+
+            <!-- Team Member 3 -->
+            <div class="team-member">
+                <img src="{{ url_for('static', filename='img/faces/face-0.jpg') }}" alt="Team Member" class="member-image">
+                <h3 class="member-name">Mallikarjuna B M</h3>
+                <p class="member-role">Developer</p>
+                <div class="social-links">
+                    <a href="#"><i class="fab fa-linkedin"></i></a>
+                    <a href="#"><i class="fab fa-github"></i></a>
+                    <a href="#"><i class="fab fa-twitter"></i></a>
+                </div>
+            </div>
+
+            <!-- Team Member 4 -->
+            <div class="team-member">
+                <img src="{{ url_for('static', filename='img/faces/face-0.jpg') }}" alt="Team Member" class="member-image">
+                <h3 class="member-name">Nandeesh S Mysore matt</h3>
+                <p class="member-role">Developer</p>
+                <div class="social-links">
+                    <a href="#"><i class="fab fa-linkedin"></i></a>
+                    <a href="#"><i class="fab fa-github"></i></a>
+                    <a href="#"><i class="fab fa-twitter"></i></a>
+                </div>
+            </div>
+
+            <!-- Team Member 6 -->
+            <div class="team-member">
+                <img src="{{ url_for('static', filename='img/faces/face-0.jpg') }}" alt="Team Member" class="member-image">
+                <h3 class="member-name">Nagasarika N S</h3>
+                <p class="member-role">Content Developer</p>
+                <div class="social-links">
+                    <a href="#"><i class="fab fa-github"></i></a>
+                    <a href="#"><i class="fab fa-linkedin"></i></a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Guide Section -->
+    <section class="guide-section" id="guide">
+        <div class="guide-container">
+            <h2 class="section-title">Preparation Guide</h2>
+            <div class="guide-grid">
+                <div class="guide-card">
+                    <h3>Data Structures & Algorithms</h3>
+                    <p>Master fundamental DSA concepts with our structured learning path.</p>
+                    <a href="#">Learn More →</a>
+                </div>
+                <div class="guide-card">
+                    <h3>Aptitude Training</h3>
+                    <p>Improve your logical and mathematical thinking abilities.</p>
+                    <a href="#">Learn More →</a>
+                </div>
+                <div class="guide-card">
+                    <h3>Communication Skills</h3>
+                    <p>Enhance your verbal and written communication skills.</p>
+                    <a href="#">Learn More →</a>
+                </div>
+            </div>
+        </div>
+    </section>
+</body>
+</html>

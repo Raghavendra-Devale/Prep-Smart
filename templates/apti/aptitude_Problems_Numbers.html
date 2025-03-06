@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PrepSmart - Math Practice</title>
+    <link rel="icon" type="image/png" href="assets/img/favicon.ico" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+
+    <!-- Bootstrap core CSS -->
+    
+    <!-- Bootstrap core CSS -->
+<link href="{{ url_for('static', filename='assets/css/bootstrap.min.css') }}" rel="stylesheet" />
+
+<!-- Animation library for notifications -->
+<link href="{{ url_for('static', filename='assets/css/animate.min.css') }}" rel="stylesheet" />
+
+<!-- Light Bootstrap Table core CSS -->
+<link href="{{ url_for('static', filename='assets/css/light-bootstrap-dashboard.css?v=1.4.0') }}" rel="stylesheet" />
+
+<!-- CSS for Demo Purpose, don't include it in your project -->
+<link href="{{ url_for('static', filename='assets/css/demo.css') }}" rel="stylesheet" />
+
+<!-- Fonts and icons -->
+<link href="http://maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet" />
+<link href="http://fonts.googleapis.com/css?family=Roboto:400,700,300" rel="stylesheet" type="text/css" />
+<link href="{{ url_for('static', filename='assets/css/pe-icon-7-stroke.css') }}" rel="stylesheet" />
+
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Roboto", Arial, sans-serif;
+        line-height: 1.6;
+        background: #f4f6f8;
+      }
+
+      .wrapper {
+        display: flex;
+        min-height: 100vh;
+      }
+
+      .sidebar {
+        width: 260px;
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100vh;
+        background: #fff;
+        z-index: 1000;
+        overflow-y: auto;
+        box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+      }
+
+      .main-panel {
+        margin-left: 260px;
+        width: calc(100% - 260px);
+        min-height: 100vh;
+      }
+
+      .navbar-default {
+        position: sticky;
+        top: 0;
+        z-index: 999;
+        width: 100%;
+        background: white;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .content {
+        padding: 20px;
+      }
+
+      .container {
+        max-width: 900px;
+        margin: 0 auto;
+      }
+
+      .progress-section {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .progress-bar {
+        width: 100%;
+        height: 20px;
+        background: #e0e0e0;
+        border-radius: 10px;
+        overflow: hidden;
+        margin: 10px 0;
+      }
+
+      .progress-fill {
+        height: 100%;
+        background: #4caf50;
+        width: 0%;
+        transition: width 0.3s ease;
+      }
+
+      .problem-card {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .difficulty-badge {
+        display: inline-block;
+        margin-bottom: 10px;
+        padding: 4px 12px;
+        border-radius: 15px;
+        font-size: 0.9em;
+      }
+
+      .difficulty-easy {
+        background: #e8f5e9;
+        color: #2e7d32;
+      }
+      .difficulty-medium {
+        background: #fff3e0;
+        color: #f57c00;
+      }
+      .difficulty-hard {
+        background: #ffebee;
+        color: #c62828;
+      }
+
+      .answer-section {
+        display: none;
+        margin-top: 20px;
+        background: #f5f5f5;
+        padding: 15px;
+        border-radius: 8px;
+      }
+
+      .answer-section.visible {
+        display: block;
+        animation: fadeIn 0.5s;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+
+      .mcq-option {
+        display: block;
+        padding: 10px;
+        margin: 5px 0;
+        background: #f1f1f1;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .mcq-option:hover {
+        background: #e9e9e9;
+      }
+
+      .mcq-option input[type="radio"] {
+        margin-right: 10px;
+      }
+
+      .mcq-option.selected {
+        background: #e0e0e0;
+      }
+
+      .actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 15px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrapper">
+      <!-- Sidebar -->
+      <div class="sidebar-wrapper">
+        <div class="logo">
+            <a href="#" class="simple-text">
+                Prep_Smart
+            </a>
+        </div>
+
+        <ul class="nav">
+            <li class="active">
+                <a href="{{ url_for('dashboard') }}">
+                    <i class="pe-7s-graph"></i>
+                    <p>Dashboard</p>
+                </a>
+            </li>
+            <li>
+                <a href="{{ url_for('user') }}">
+                    <i class="pe-7s-user"></i>
+                    <p>User Profile</p>
+                </a>
+            </li>
+            <li>
+                <a href="{{ url_for('aptitude') }}">
+                    <i class="pe-7s-note2"></i>
+                    <p>Aptitude Preparation</p>
+                </a>
+            </li>
+            <li>
+                <a href="{{ url_for('communication') }}">
+                    <i class="pe-7s-news-paper"></i>
+                    <p>Communication Skills</p>
+                </a>
+            </li>
+            <li>
+                <a href="{{ url_for('dsa') }}">
+                    <i class="pe-7s-science"></i>
+                    <p>DSA</p>
+                </a>
+            </li>
+            <li>
+                <a href="{{ url_for('interview') }}">
+                    <i class="pe-7s-map-marker"></i>
+                    <p>Interview Preparation</p>
+                </a>
+            </li>
+            <li>
+                <a href="{{ url_for('notifications') }}">
+                    <i class="pe-7s-bell"></i>
+                    <p>Notifications</p>
+                </a>
+            </li>
+            <li class="active-pro">
+                <a href="{{ url_for('home') }}">
+                    <i class="pe-7s-rocket"></i>
+                    <p>Home</p>
+                </a>
+            </li>
+        </ul>
+        
+  </div>
+      </div>
+
+      <!-- Main Panel -->
+      <div class="main-panel">
+        <!-- Navbar -->
+        <nav class="navbar navbar-default">
+          <div class="container-fluid">
+            <div class="navbar-header">
+              <a class="navbar-brand" href="#">Aptitude Practice</a>
+            </div>
+          </div>
+        </nav>
+
+        <!-- Content -->
+        <div class="content">
+          <div class="container">
+            <!-- Progress Section -->
+            <div class="progress-section">
+              <h3>Your Progress</h3>
+              <div class="progress-bar">
+                <div id="overall-progress" class="progress-fill">0%</div>
+              </div>
+              <div>
+                Problems solved:
+                <span id="problems-solved">0</span> /
+                <span id="total-problems">0</span>
+              </div>
+            </div>
+
+            <!-- Dynamically loaded problems will be inserted here -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Problem data structure
+      // Problem data structure
+      const problems = [
+        {
+          id: 1,
+          title: "Number Series",
+          text: "Find the next number in the series: 2, 6, 12, 20, 30, ___",
+          difficulty: "easy",
+          topic: "Arithmetic Progression",
+          youtubeLink: "https://www.youtube.com",
+          options: [
+            { value: "40", isCorrect: false },
+            { value: "41", isCorrect: false },
+            { value: "42", isCorrect: true },
+            { value: "44", isCorrect: false },
+          ],
+          solution: `
+            <p>The difference between consecutive terms increases by 2:</p>
+            <ul>
+                <li>2 to 6: difference = 4</li>
+                <li>6 to 12: difference = 6</li>
+                <li>12 to 20: difference = 8</li>
+                <li>20 to 30: difference = 10</li>
+                <li>Therefore, 30 to next: difference = 12</li>
+                <li>So, 30 + 12 = 42</li>
+            </ul>
+        `,
+        },
+        {
+          id: 2,
+          title: "Prime Number Check",
+          text: "Which of the following is a prime number?",
+          difficulty: "easy",
+          topic: "Number Properties",
+          options: [
+            { value: "15", isCorrect: false },
+            { value: "17", isCorrect: true },
+            { value: "20", isCorrect: false },
+            { value: "21", isCorrect: false },
+          ],
+          solution: `
+            <p>Explanation:</p>
+            <ul>
+                <li>A prime number is only divisible by 1 and itself.</li>
+                <li>17 has no divisors other than 1 and 17.</li>
+                <li>Thus, 17 is a prime number.</li>
+            </ul>
+        `,
+        },
+        {
+          id: 3,
+          title: "Divisibility Rule",
+          text: "Which of the following numbers is divisible by 9?",
+          difficulty: "easy",
+          topic: "Number Properties",
+          options: [
+            { value: "123", isCorrect: false },
+            { value: "135", isCorrect: true },
+            { value: "143", isCorrect: false },
+            { value: "156", isCorrect: false },
+          ],
+          solution: `
+            <p>Explanation:</p>
+            <ul>
+                <li>A number is divisible by 9 if the sum of its digits is divisible by 9.</li>
+                <li>Sum of digits of 135: 1 + 3 + 5 = 9</li>
+                <li>Since 9 is divisible by 9, 135 is divisible by 9.</li>
+            </ul>
+        `,
+        },
+        {
+          id: 4,
+          title: "Fibonacci Series",
+          text: "Find the 6th term in the Fibonacci series starting with 0 and 1.",
+          difficulty: "medium",
+          topic: "Number Series",
+          options: [
+            { value: "5", isCorrect: false },
+            { value: "8", isCorrect: true },
+            { value: "13", isCorrect: false },
+            { value: "21", isCorrect: false },
+          ],
+          solution: `
+            <p>Steps to Calculate:</p>
+            <ul>
+                <li>The Fibonacci series starts with 0 and 1, and each term is the sum of the previous two.</li>
+                <li>0, 1, 1, 2, 3, 5, 8...</li>
+                <li>The 6th term is 8.</li>
+            </ul>
+        `,
+        },
+        {
+          id: 5,
+          title: "Square Calculation",
+          text: "What is the square of 13?",
+          difficulty: "easy",
+          topic: "Squares and Powers",
+          options: [
+            { value: "156", isCorrect: false },
+            { value: "169", isCorrect: true },
+            { value: "172", isCorrect: false },
+            { value: "181", isCorrect: false },
+          ],
+          solution: `
+            <p>Steps to Calculate:</p>
+            <ul>
+                <li>Square of a number is the number multiplied by itself.</li>
+                <li>13 × 13 = 169</li>
+                <li>Thus, the square of 13 is 169.</li>
+            </ul>
+        `,
+        },
+        {
+          id: 6,
+          title: "Factorial Calculation",
+          text: "What is the factorial of 5?",
+          difficulty: "easy",
+          topic: "Factorials",
+          options: [
+            { value: "100", isCorrect: false },
+            { value: "120", isCorrect: true },
+            { value: "130", isCorrect: false },
+            { value: "140", isCorrect: false },
+          ],
+          solution: `
+            <p>Steps to Calculate Factorial:</p>
+            <ul>
+                <li>Factorial of a number n is the product of all positive integers less than or equal to n.</li>
+                <li>5! = 5 × 4 × 3 × 2 × 1 = 120</li>
+                <li>So, the factorial of 5 is 120.</li>
+            </ul>
+        `,
+        },
+        {
+          id: 7,
+          title: "Even Numbers",
+          text: "Which of the following is an even number?",
+          difficulty: "easy",
+          topic: "Number Properties",
+          options: [
+            { value: "13", isCorrect: false },
+            { value: "19", isCorrect: false },
+            { value: "22", isCorrect: true },
+            { value: "37", isCorrect: false },
+          ],
+          solution: `
+            <p>Explanation:</p>
+            <ul>
+                <li>An even number is divisible by 2.</li>
+                <li>22 ÷ 2 = 11, which is an integer.</li>
+                <li>Thus, 22 is an even number.</li>
+            </ul>
+        `,
+        },
+        {
+          id: 8,
+          title: "Cube Calculation",
+          text: "What is the cube of 4?",
+          difficulty: "easy",
+          topic: "Cubes and Powers",
+          options: [
+            { value: "64", isCorrect: true },
+            { value: "32", isCorrect: false },
+            { value: "16", isCorrect: false },
+            { value: "48", isCorrect: false },
+          ],
+          solution: `
+            <p>Steps to Calculate Cube:</p>
+            <ul>
+                <li>The cube of a number is the number multiplied by itself three times.</li>
+                <li>4 × 4 × 4 = 64</li>
+                <li>Thus, the cube of 4 is 64.</li>
+            </ul>
+        `,
+        },
+        {
+          id: 9,
+          title: "LCM Calculation",
+          text: "Find the LCM of 4 and 5.",
+          difficulty: "easy",
+          topic: "LCM and HCF",
+          options: [
+            { value: "10", isCorrect: false },
+            { value: "20", isCorrect: true },
+            { value: "30", isCorrect: false },
+            { value: "40", isCorrect: false },
+          ],
+          solution: `
+            <p>Steps to Calculate LCM:</p>
+            <ul>
+                <li>LCM is the smallest number that is divisible by both given numbers.</li>
+                <li>Multiples of 4: 4, 8, 12, 16, 20, ...</li>
+                <li>Multiples of 5: 5, 10, 15, 20, ...</li>
+                <li>Smallest common multiple = 20</li>
+                <li>Thus, the LCM of 4 and 5 is 20.</li>
+            </ul>
+        `,
+        },
+        {
+          id: 10,
+          title: "HCF Calculation",
+          text: "Find the HCF of 12 and 18.",
+          difficulty: "medium",
+          topic: "LCM and HCF",
+          options: [
+            { value: "3", isCorrect: false },
+            { value: "6", isCorrect: true },
+            { value: "9", isCorrect: false },
+            { value: "12", isCorrect: false },
+          ],
+          solution: `
+            <p>Steps to Calculate HCF:</p>
+            <ul>
+                <li>HCF is the largest number that divides both given numbers.</li>
+                <li>Factors of 12: 1, 2, 3, 4, 6, 12</li>
+                <li>Factors of 18: 1, 2, 3, 6, 9, 18</li>
+                <li>Common factors: 1, 2, 3, 6</li>
+                <li>Largest common factor = 6</li>
+                <li>Thus, the HCF of 12 and 18 is 6.</li>
+            </ul>
+        `,
+        },
+        {
+          id: 11,
+          title: "Divisibility by 132",
+          text: "How many of the following numbers are divisible by 132 ?264, 396, 462, 792, 968, 2178, 5184, 6336.",
+          difficulty: "medium",
+          topic: "Divisibility",
+          options: [
+            { value: "4", isCorrect: true },
+            { value: "5", isCorrect: false },
+            { value: "6", isCorrect: false },
+            { value: "7", isCorrect: false },
+          ],
+          solution: `
+            <p>Steps to Calculate </p>
+            <ul>
+                <li>So, if the number divisible by all the three number 4, 3 and 11, then the number is divisible by 132 also.</li>
+                <li>Factors of 12: 1, 2, 3, 4, 6, 12</li>
+                <li>264  11,3,4 (/)</li>
+                <li>396  11,3,4 (/)</li>
+                <li>462  11,3 (X)</li>
+                <li>792  11,3,4 (/)</li>
+                <li>968  11,4 (X)</li>
+                <li>2178  11,3 (X)</li>
+                <li>5184  3,4 (X)</li>
+                 <li>6336  11,3,4 (/) </li>         
+            </ul>
+        `,
+        },
+
+        {
+          id: 12,
+          title: "Complex Multiplication",
+          text: "(935421 x 625) = ?",
+          difficulty: "medium",
+          topic: "Multiplication",
+          options: [
+            { value: "575648125", isCorrect: false },
+            { value: "584638125", isCorrect: true },
+            { value: "584649125", isCorrect: false },
+            { value: "585628125", isCorrect: false },
+          ],
+          solution: `
+            <p>Steps to Calculate </p>
+            <ul>
+                <li>935421 x 625 = 935421 x 54 = 935421 x (10/2)^4</li>
+                <li>= 935421 x 10^4</li>
+                <li>= 9354210000/16</li>
+                <li>= 584638125</li>
+            </ul>
+        `,
+        },
+
+        // Add more problems up to 50, focusing on numerical concepts like prime factorization, percentage calculations, logarithms, etc.
+      ];
+
+      // Function to render problems dynamically
+      function renderProblems() {
+        const container = document.querySelector(".container");
+        const totalProblemsSpan = document.getElementById("total-problems");
+
+        // Set total problems count
+        totalProblemsSpan.textContent = problems.length;
+
+        // Render each problem
+        problems.forEach((problem) => {
+          const problemCard = document.createElement("div");
+          problemCard.className = "problem-card";
+          problemCard.innerHTML = `
+                    <h4>Problem ${problem.id}: ${problem.title}</h4>
+                    <p>${problem.text}</p>
+                    <span class="difficulty-badge difficulty-${
+                      problem.difficulty
+                    }">
+                        ${
+                          problem.difficulty.charAt(0).toUpperCase() +
+                          problem.difficulty.slice(1)
+                        }
+                    </span>
+                    
+                    <div class="mcq-options">
+                        ${problem.options
+                          .map(
+                            (option, index) => `
+                            <label class="mcq-option">
+                                <input type="radio" 
+                                       name="problem${problem.id}" 
+                                       value="${option.value}"
+                                       data-is-correct="${option.isCorrect}">
+                                ${option.value}
+                            </label>
+                        `
+                          )
+                          .join("")}
+                    </div>
+
+                    <div class="actions">
+                        <button onclick="toggleSolution(${
+                          problem.id
+                        })">Show Solution</button>
+                        <label>
+                            <input type="checkbox" onchange="updateProgress()"> 
+                            Mark as Solved
+                        </label>
+                    </div>
+
+                    <div id="solution-${problem.id}" class="answer-section">
+                        <h5>Solution:</h5>
+                        ${problem.solution}
+                    </div>
+                `;
+
+          container.appendChild(problemCard);
+
+          // Add click handlers for radio buttons in this problem
+          const radioButtons = problemCard.querySelectorAll('input[type="radio"]');
+          radioButtons.forEach(radio => {
+            radio.addEventListener('click', function() {
+              const isCorrect = this.getAttribute('data-is-correct') === 'true';
+              const allOptions = this.closest('.mcq-options').querySelectorAll('.mcq-option');
+              
+              // Reset all options first
+              allOptions.forEach(opt => {
+                opt.style.backgroundColor = '#f1f1f1';
+                opt.style.color = '#000';
+              });
+
+              // Color the selected option
+              const selectedOption = this.closest('.mcq-option');
+              if (isCorrect) {
+                selectedOption.style.backgroundColor = '#dff0d8';
+                selectedOption.style.color = '#3c763d';
+              } else {
+                selectedOption.style.backgroundColor = '#f2dede';
+                selectedOption.style.color = '#a94442';
+                
+                // Show the correct answer
+                allOptions.forEach(opt => {
+                  const radio = opt.querySelector('input[type="radio"]');
+                  if (radio.getAttribute('data-is-correct') === 'true') {
+                    opt.style.backgroundColor = '#dff0d8';
+                    opt.style.color = '#3c763d';
+                  }
+                });
+              }
+            });
+          });
+        });
+      }
+
+      // Toggle solution visibility
+      function toggleSolution(problemId) {
+        const solutionSection = document.getElementById(
+          `solution-${problemId}`
+        );
+        solutionSection.classList.toggle("visible");
+      }
+
+      // Update progress
+      function updateProgress() {
+        const solvedCheckboxes = document.querySelectorAll('input[type="checkbox"]:checked');
+        const problemsSolved = solvedCheckboxes.length;
+        const totalProblems = problems.length;
+
+        const progressPercentage = (problemsSolved / totalProblems) * 100;
+
+        document.getElementById("problems-solved").textContent = problemsSolved;
+        const progressFill = document.getElementById("overall-progress");
+        progressFill.textContent = `${progressPercentage.toFixed(0)}%`;
+        progressFill.style.width = `${progressPercentage}%`;
+      }
+
+      // Initialize on page load
+      document.addEventListener("DOMContentLoaded", () => {
+        renderProblems();
+      });
+    </script>
+  </body>
+</html>

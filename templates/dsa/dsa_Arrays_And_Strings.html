@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <link rel="icon" type="image/png" href="assets/img/favicon.ico">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    
+        <title>Light Bootstrap Dashboard by Creative Tim</title>
+    
+        <meta content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0' name='viewport' />
+        <meta name="viewport" content="width=device-width" />
+    
+         <!-- Bootstrap core CSS -->
+<link href="{{ url_for('static', filename='assets/css/bootstrap.min.css') }}" rel="stylesheet" />
+
+<!-- Animation library for notifications -->
+<link href="{{ url_for('static', filename='assets/css/animate.min.css') }}" rel="stylesheet" />
+
+<!-- Light Bootstrap Table core CSS -->
+<link href="{{ url_for('static', filename='assets/css/light-bootstrap-dashboard.css') }}" rel="stylesheet" />
+
+<!-- CSS for Demo Purpose -->
+<link href="{{ url_for('static', filename='assets/css/demo.css') }}" rel="stylesheet" />
+
+<!-- Fonts and icons -->
+<link href="http://maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css?family=Roboto:400,700,300" rel="stylesheet" type="text/css">
+<link href="{{ url_for('static', filename='assets/css/pe-icon-7-stroke.css') }}" rel="stylesheet" />
+    </head>
+    <body>
+    
+    <div class="wrapper">
+        <div class="sidebar" data-color="purple" data-image="assets/img/sidebar-5.jpg">
+            <div class="sidebar-wrapper">
+                <div class="logo">
+                    <a href="#" class="simple-text">
+                        Prep_Smart
+                    </a>
+                </div>
+    
+                <ul class="nav">
+                    <li class="active">
+                        <a href="{{ url_for('dashboard') }}">
+                            <i class="pe-7s-graph"></i>
+                            <p>Dashboard</p>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ url_for('user') }}">
+                            <i class="pe-7s-user"></i>
+                            <p>User Profile</p>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ url_for('aptitude') }}">
+                            <i class="pe-7s-note2"></i>
+                            <p>Aptitude Preparation</p>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ url_for('communication') }}">
+                            <i class="pe-7s-news-paper"></i>
+                            <p>Communication Skills</p>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ url_for('dsa') }}">
+                            <i class="pe-7s-science"></i>
+                            <p>DSA</p>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ url_for('interview') }}">
+                            <i class="pe-7s-map-marker"></i>
+                            <p>Interview Preparation</p>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ url_for('notifications') }}">
+                            <i class="pe-7s-bell"></i>
+                            <p>Notifications</p>
+                        </a>
+                    </li>
+                    <li class="active-pro">
+                        <a href="{{ url_for('home') }}">
+                            <i class="pe-7s-rocket"></i>
+                            <p>Home</p>
+                        </a>
+                    </li>
+                </ul>
+                
+            </div>
+        </div>
+    
+        <div class="main-panel">
+            <nav class="navbar navbar-default navbar-fixed">
+                <div class="container-fluid">
+                    <div class="navbar-header">
+                        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navigation-example-2">
+                            <span class="sr-only">Toggle navigation</span>
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                        </button>
+                        <a class="navbar-brand" href="#">Data Structures & Algorithms</a>
+                    </div>
+                    <div class="collapse navbar-collapse">
+                        <ul class="nav navbar-nav navbar-left">
+                            <li>
+                                <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                                    <i class="fa fa-dashboard"></i>
+                                    <p class="hidden-lg hidden-md">Dashboard</p>
+                                </a>
+                            </li>
+                            <li class="dropdown">
+                                <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                                    <i class="fa fa-globe"></i>
+                                    <b class="caret hidden-sm hidden-xs"></b>
+                                    <p class="hidden-lg hidden-md">
+                                        Notifications
+                                        <b class="caret"></b>
+                                    </p>
+                                </a>
+                                <ul class="dropdown-menu">
+                                    <li><a href="#">Notification 1</a></li>
+                                </ul>
+                            </li>
+                            <li>
+                                <a href="">
+                                    <i class="fa fa-search"></i>
+                                    <p class="hidden-lg hidden-md">Search</p>
+                                </a>
+                            </li>
+                        </ul>
+    
+                        <ul class="nav navbar-nav navbar-right">
+                            <li>
+                                <a href="">
+                                    <p>Account</p>
+                                </a>
+                            </li>
+                            <li class="dropdown">
+                                <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                                    <p>
+                                        Dropdown
+                                        <b class="caret"></b>
+                                    </p>
+                                </a>
+                                <ul class="dropdown-menu">
+                                    <li><a href="#">Learn DSA</a></li>
+                                    <li><a href="#">Practice Problems</a></li>
+                                </ul>
+                            </li>
+                            <li>
+                                <a href="#">
+                                    <p>Log out</p>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </nav>
+            <div class="content">
+                <div class="container-fluid">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="card">
+                                <div class="header">
+                                    <h4 class="title">Arrays and Strings Problems</h4>
+                                    <p class="category">Practice these fundamental array and string manipulation problems with detailed explanations</p>
+                                </div>
+                                <div class="content">
+                                    <div class="table-responsive">
+                                        <table class="table table-hover">
+                                            <thead>
+                                                <tr>
+                                                    <th>Problem</th>
+                                                    <th>Description</th>
+                                                    <th>Difficulty</th>
+                                                    <th>Practice Link</th>
+                                                    <th>Video Solution</th>
+                                                    <th style="width: 150px;">Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td>Two Sum</td>
+                                                    <td>Given an array of integers and a target sum, find two numbers that add up to the target. For example, in array [2,7,11,15] with target 9, return [0,1] since 2+7=9. This teaches you how to efficiently search through arrays.</td>
+                                                    <td>Easy</td>
+                                                    <td><a href="https://leetcode.com/problems/two-sum/" target="_blank">LeetCode</a></td>
+                                                    <td><a href="https://www.youtube.com/watch?v=KLlXCFG5TnA" target="_blank">Watch Solution</a></td>
+                                                    <!-- <td><button class="btn btn-success btn-fill" style="width: 130px;" onclick="markAsComplete(this)">Mark as Complete</button></td> -->
+                                                </tr>
+                                                <tr>
+                                                    <td>What is an Anagram?</td>
+                                                    <td>An anagram is when two words have the exact same letters but in different orders. For example, "listen" and "silent" are anagrams. "heart" and "earth" are anagrams. This problem teaches you to compare the character composition of strings.</td>
+                                                    <td>Easy</td>
+                                                    <td><a href="https://leetcode.com/problems/valid-anagram/" target="_blank">LeetCode</a></td>
+                                                    <td><a href="https://www.youtube.com/watch?v=9UtInBqnCgA" target="_blank">Watch Solution</a></td>
+                                                    <!-- <td><button class="btn btn-success btn-fill" style="width: 130px;" onclick="markAsComplete(this)">Mark as Complete</button></td> -->
+                                                </tr>
+                                                <tr>
+                                                    <td>Reverse Array</td>
+                                                    <td>Write a program to reverse an array. For example, [1,2,3,4] becomes [4,3,2,1]. This fundamental problem teaches you how to manipulate array elements and use the two-pointer technique (working from both ends simultaneously).</td>
+                                                    <td>Easy</td>
+                                                    <td><a href="https://practice.geeksforgeeks.org/problems/reverse-an-array/0" target="_blank">GeeksforGeeks</a></td>
+                                                    <td><a href="https://www.youtube.com/watch?v=_d0T_2Lk2qA" target="_blank">Watch Solution</a></td>
+                                                    <!-- <td><button class="btn btn-success btn-fill" style="width: 130px;" onclick="markAsComplete(this)">Mark as Complete</button></td> -->
+                                                </tr>
+                                                <tr>
+                                                    <td>Palindrome Check</td>
+                                                    <td>Check if a string reads the same forwards and backwards. For example, "racecar" is a palindrome. This teaches basic string comparison and handling special characters/spaces.</td>
+                                                    <td>Easy</td>
+                                                    <td><a href="https://leetcode.com/problems/valid-palindrome/" target="_blank">LeetCode</a></td>
+                                                    <td><a href="https://www.youtube.com/watch?v=jJXJ16kPFWg" target="_blank">Watch Solution</a></td>
+                                                    <!-- <td><button class="btn btn-success btn-fill" style="width: 130px;" onclick="markAsComplete(this)">Mark as Complete</button></td> -->
+                                                </tr>
+                                                <tr>
+                                                    <td>Find Unique Characters</td>
+                                                    <td>Find the longest substring without repeating characters. For example, in "abcabcbb", the longest substring is "abc" (length 3). This teaches you about sliding window technique - a way to process strings piece by piece efficiently.</td>
+                                                    <td>Medium</td>
+                                                    <td><a href="https://leetcode.com/problems/longest-substring-without-repeating-characters/" target="_blank">LeetCode</a></td>
+                                                    <td><a href="https://www.youtube.com/watch?v=wiGpQwVHdE0" target="_blank">Watch Solution</a></td>
+                                                    <!-- <td><button class="btn btn-success btn-fill" style="width: 130px;" onclick="markAsComplete(this)">Mark as Complete</button></td> -->
+                                                </tr>
+                                                <tr>
+                                                    <td>Rotate Array</td>
+                                                    <td>Rotate an array to the right by k steps. For example, [1,2,3,4,5] rotated by 2 becomes [4,5,1,2,3]. This teaches array manipulation and understanding circular movement in arrays.</td>
+                                                    <td>Medium</td>
+                                                    <td><a href="https://leetcode.com/problems/rotate-array/" target="_blank">LeetCode</a></td>
+                                                    <td><a href="https://www.youtube.com/watch?v=BHr381Guz3Y" target="_blank">Watch Solution</a></td>
+                                                    <!-- <td><button class="btn btn-success btn-fill" style="width: 130px;" onclick="markAsComplete(this)">Mark as Complete</button></td> -->
+                                                </tr>
+                                                <tr>
+                                                    <td>Water Container</td>
+                                                    <td>Given heights of walls [1,8,6,2,5,4,8,3,7], find the two walls that can hold the most water between them. This teaches you how to solve geometric problems using arrays and optimize using two pointers.</td>
+                                                    <td>Medium</td>
+                                                    <td><a href="https://leetcode.com/problems/container-with-most-water/" target="_blank">LeetCode</a></td>
+                                                    <td><a href="https://www.youtube.com/watch?v=UuiTKBwPgAo" target="_blank">Watch Solution</a></td>
+                                                    <!-- <td><button class="btn btn-success btn-fill" style="width: 130px;" onclick="markAsComplete(this)">Mark as Complete</button></td> -->
+                                                </tr>
+                                                <tr>
+                                                    <td>Group Similar Words</td>
+                                                    <td>Given ["eat","tea","tan","ate","nat","bat"], group related words together: [["eat","tea","ate"],["tan","nat"],["bat"]]. This teaches you how to organize strings based on their character composition using hash maps.</td>
+                                                    <td>Medium</td>
+                                                    <td><a href="https://leetcode.com/problems/group-anagrams/" target="_blank">LeetCode</a></td>
+                                                    <td><a href="https://www.youtube.com/watch?v=vzdNOK2oB2E" target="_blank">Watch Solution</a></td>
+                                                    <!-- <td><button class="btn btn-success btn-fill" style="width: 130px;" onclick="markAsComplete(this)">Mark as Complete</button></td> -->
+                                                </tr>
+                                                <tr>
+                                                    <td>Three Numbers Sum</td>
+                                                    <td>Find three different numbers in an array that add up to zero. For example, in [-1,0,1,2,-1,-4], one solution is [-1,-1,2]. This builds on Two Sum and teaches advanced array manipulation.</td>
+                                                    <td>Medium</td>
+                                                    <td><a href="https://leetcode.com/problems/3sum/" target="_blank">LeetCode</a></td>
+                                                    <td><a href="https://www.youtube.com/watch?v=jzZsG8n2R9A" target="_blank">Watch Solution</a></td>
+                                                    <!-- <td><button class="btn btn-success btn-fill" style="width: 130px;" onclick="markAsComplete(this)">Mark as Complete</button></td> -->
+                                                </tr>
+                                                <tr>
+                                                    <td>String Compression</td>
+                                                    <td>Compress a string by replacing repeated characters with their count. For example, "aabbbcccc" becomes "a2b3c4". This teaches string building and counting consecutive elements.</td>
+                                                    <td>Medium</td>
+                                                    <td><a href="https://leetcode.com/problems/string-compression/" target="_blank">LeetCode</a></td>
+                                                    <td><a href="https://www.youtube.com/watch?v=IhJgguNiYYk" target="_blank">Watch Solution</a></td>
+                                                    <!-- <td><button class="btn btn-success btn-fill" style="width: 100px;" onclick="markAsComplete(this)">Mark as Complete</button></td> -->
+                                                </tr>
+                                                <tr>
+                                                    <td>Smallest Window Search</td>
+                                                    <td>Find the smallest part of a string that contains all characters from another string. For example, in string "ADOBECODEBANC", find smallest window containing all letters of "ABC". This teaches advanced string processing using sliding window.</td>
+                                                    <td>Hard</td>
+                                                    <td><a href="https://leetcode.com/problems/minimum-window-substring/" target="_blank">LeetCode</a></td>
+                                                    <td><a href="https://www.youtube.com/watch?v=jSto0O4AJbM" target="_blank">Watch Solution</a></td>
+                                                    <!-- <td><button class="btn btn-success btn-fill" style="width: 130px;" onclick="markAsComplete(this)">Mark as Complete</button></td> -->
+                                                </tr>
+                                                <tr>
+                                                    <td>Longest Palindromic Substring</td>
+                                                    <td>Find the longest substring that reads the same forwards and backwards. For example, in "babad", the answer is "bab" or "aba". This teaches dynamic programming and string manipulation techniques.</td>
+                                                    <td>Hard</td>
+                                                    <td><a href="https://leetcode.com/problems/longest-palindromic-substring/" target="_blank">LeetCode</a></td>
+                                                    <td><a href="https://www.youtube.com/watch?v=XYQecbcd6_c" target="_blank">Watch Solution</a></td>
+                                                    <!-- <td><button class="btn btn-success btn-fill" style="width: 130px;" onclick="markAsComplete(this)">Mark as Complete</button></td> -->
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+    
+            <script>
+                // Add progress tracking buttons and functionality
+                document.addEventListener('DOMContentLoaded', function() {
+                    const rows = document.querySelectorAll('tbody tr');
+                    
+                    rows.forEach((row, index) => {
+                        // Create button cell
+                        const buttonCell = document.createElement('td');
+                        const button = document.createElement('button');
+                        button.className = 'btn btn-default btn-sm';
+                        button.innerHTML = 'Mark Complete';
+                        button.onclick = function() {
+                            toggleProblemStatus(index);
+                        };
+                        
+                        // Add button to row
+                        buttonCell.appendChild(button);
+                        row.appendChild(buttonCell);
+                    });
+    
+                    // Load saved progress
+                    loadProgress();
+                });
+    
+                function toggleProblemStatus(problemIndex) {
+                    // Get saved progress
+                    let progress = JSON.parse(localStorage.getItem('basicProgrammingProgress') || '{}');
+                    
+                    // Toggle status
+                    progress[problemIndex] = !progress[problemIndex];
+                    
+                    // Save updated progress
+                    localStorage.setItem('basicProgrammingProgress', JSON.stringify(progress));
+                    
+                    // Update button appearance
+                    updateButtonStatus(problemIndex, progress[problemIndex]);
+                    
+                    // Update progress count
+                    updateProgressCount();
+                }
+    
+                function loadProgress() {
+                    const progress = JSON.parse(localStorage.getItem('basicProgrammingProgress') || '{}');
+                    
+                    // Update each button's status
+                    Object.keys(progress).forEach(index => {
+                        if(progress[index]) {
+                            updateButtonStatus(index, true);
+                        }
+                    });
+                    
+                    updateProgressCount();
+                }
+    
+                function updateButtonStatus(index, completed) {
+                    const button = document.querySelectorAll('tbody tr')[index].lastElementChild.querySelector('button');
+                    if(completed) {
+                        button.className = 'btn btn-success btn-sm';
+                        button.innerHTML = 'Completed';
+                    } else {
+                        button.className = 'btn btn-default btn-sm';
+                        button.innerHTML = 'Mark Complete';
+                    }
+                }
+    
+                function updateProgressCount() {
+                    const progress = JSON.parse(localStorage.getItem('basicProgrammingProgress') || '{}');
+                    const completedCount = Object.values(progress).filter(Boolean).length;
+                    const totalProblems = document.querySelectorAll('tbody tr').length;
+                    
+                    // Create or update progress display
+                    let progressDisplay = document.getElementById('progress-display');
+                    if (!progressDisplay) {
+                        progressDisplay = document.createElement('div');
+                        progressDisplay.id = 'progress-display';
+                        progressDisplay.style.textAlign = 'center';
+                        progressDisplay.style.margin = '20px 0';
+                        document.querySelector('.content').appendChild(progressDisplay);
+                    }
+                    
+                    progressDisplay.innerHTML = `Progress: ${completedCount}/${totalProblems} problems completed`;
+                }
+            </script>    
+</body>
+</html>
