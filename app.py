@@ -82,11 +82,11 @@ def register():
             db = get_db_connection()
             cursor = db.cursor()
 
-            # First create user
+            # First create user with name
             cursor.execute("""
-                INSERT INTO users (email, password, role)
-                VALUES (?, ?, ?)
-            """, (email, generate_password_hash(password), role))
+                INSERT INTO users (name, email, password, role)
+                VALUES (?, ?, ?, ?)
+            """, (name, email, generate_password_hash(password), role))
             
             user_id = cursor.lastrowid
 
