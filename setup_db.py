@@ -122,12 +122,27 @@ def create_tables():
     # Student Progress Table
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS student_progress (
+        progress_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        question_id INTEGER NOT NULL,
+        topic_id INTEGER NOT NULL,
+        is_completed INTEGER DEFAULT 0,
+        last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id),
+        UNIQUE(user_id, question_id, topic_id)
+    );
+    """)
+    
+    # Aptitude Progress Table
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS aptitude_progress (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        student_id INTEGER,
-        topic TEXT NOT NULL,
-        progress_percentage INTEGER CHECK(progress_percentage BETWEEN 0 AND 100),
-        last_updated TEXT,
-        FOREIGN KEY (student_id) REFERENCES students(id)
+        student_id INTEGER NOT NULL,
+        problem_id INTEGER NOT NULL,
+        is_completed BOOLEAN DEFAULT 0,
+        completion_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (student_id) REFERENCES users(id),
+        UNIQUE(student_id, problem_id)
     );
     """)
     
