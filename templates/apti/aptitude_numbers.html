@@ -1,274 +1,56 @@
-<!doctype html>
-<html lang="en">
-<head>
-    <meta charset="utf-8" />
-    <link rel="icon" type="image/png" href="assets/img/favicon.ico">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+{% extends "apti/apti_base.html" %}
 
-    <title>Aptitude Problems - Placement Preparation</title>
+{% block topic_title %}Number System{% endblock %}
 
-    <meta content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0' name='viewport' />
-    <meta name="viewport" content="width=device-width" />
-
-    <!-- Bootstrap core CSS -->
-    <link href="{{ url_for('static', filename='assets/css/bootstrap.min.css') }}" rel="stylesheet" />
-
-    <!-- Animation library for notifications -->
-    <link href="{{ url_for('static', filename='assets/css/animate.min.css') }}" rel="stylesheet" />
-
-    <!-- Light Bootstrap Table core CSS -->
-    <link href="{{ url_for('static', filename='assets/css/light-bootstrap-dashboard.css') }}" rel="stylesheet" />
-
-    <!-- CSS for Demo Purpose -->
-    <link href="{{ url_for('static', filename='assets/css/demo.css') }}" rel="stylesheet" />
-
-    <!-- Fonts and icons -->
-    <link href="http://maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css?family=Roboto:400,700,300" rel="stylesheet" type="text/css">
-    <link href="{{ url_for('static', filename='assets/css/pe-icon-7-stroke.css') }}" rel="stylesheet" />
-
-    <!-- Custom styles -->
-    <style>
-        .main-panel {
-            float: right;
-            width: calc(100% - 260px);
-            min-height: 100vh;
-            position: relative;
-            background: rgba(203, 203, 210, 0.15);
-        }
-
-        .problem-card {
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.12);
-            margin-bottom: 20px;
-            padding: 20px;
-        }
-
-        .problem-header {
-            font-size: 16px;
-            font-weight: 500;
-            color: #333;
-            margin-bottom: 15px;
-        }
-
-        .solution {
-            display: none;
-            margin-top: 15px;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 6px;
-            border-left: 4px solid #667eea;
-        }
-
-        .btn-group {
-            margin-top: 15px;
-        }
-
-        .btn-view-solution {
-            background: #667eea;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 4px;
-            margin-right: 10px;
-            transition: all 0.3s ease;
-        }
-
-        .btn-view-solution:hover {
-            background: #5a67d8;
-            transform: translateY(-1px);
-        }
-
-        .btn-complete {
-            background: #48bb78;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 4px;
-            transition: all 0.3s ease;
-        }
-
-        .btn-complete:hover {
-            background: #38a169;
-            transform: translateY(-1px);
-        }
-
-        .btn-complete.completed {
-            background: #ed8936;
-        }
-
-        .problem-content {
-            font-size: 15px;
-            line-height: 1.6;
-            color: #4a5568;
-        }
-
-        .solution-content {
-            font-size: 14px;
-            line-height: 1.6;
-            color: #4a5568;
-        }
-
-        .content-wrapper {
-            padding: 30px;
-        }
-
-        .page-header {
-            margin-bottom: 30px;
-        }
-
-        .page-title {
-            color: #2d3748;
-            font-size: 24px;
-            font-weight: 600;
-        }
-    </style>
-</head>
-<body>
-
-<div class="wrapper">
-    <!-- Sidebar -->
-    <div class="sidebar" data-color="purple" data-image="{{ url_for('static', filename='assets/img/sidebar-5.jpg') }}">
-        <div class="sidebar-wrapper">
-            <div class="logo">
-                <a href="#" class="simple-text">
-                    Prep_Smart
-                </a>
-            </div>
-
-            <ul class="nav">
-                <li>
-                    <a href="{{ url_for('dashboard') }}">
-                        <i class="pe-7s-graph"></i>
-                        <p>Dashboard</p>
-                    </a>
-                </li>
-                <li>
-                    <a href="{{ url_for('user_profile') }}">
-                        <i class="pe-7s-user"></i>
-                        <p>User Profile</p>
-                    </a>
-                </li>
-                <li class="active">
-                    <a href="{{ url_for('aptitude') }}">
-                        <i class="pe-7s-note2"></i>
-                        <p>Aptitude Preparation</p>
-                    </a>
-                </li>
-                <!-- Add other sidebar items -->
-                <li>
-                    <a href="{{ url_for('communication') }}">
-                        <i class="pe-7s-news-paper"></i>
-                        <p>Communication Skills</p>
-                    </a>
-                </li>
-                <li>
-                    <a href="{{ url_for('dsa') }}">
-                        <i class="pe-7s-science"></i>
-                        <p>DSA</p>
-                    </a>
-                </li>
-                <li>
-                    <a href="{{ url_for('interview') }}">
-                        <i class="pe-7s-map-marker"></i>
-                        <p>Interview Preparation</p>
-                    </a>
-                </li>
-                <li>
-                    <a href="{{ url_for('notifications') }}">
-                        <i class="pe-7s-bell"></i>
-                        <p>Notifications</p>
-                    </a>
-                </li>
-                <li class="active-pro">
-                    <a href="{{ url_for('home') }}">
-                        <i class="pe-7s-rocket"></i>
-                        <p>Home</p>
-                    </a>
-                </li>            
-            </ul>
-        </div>
-    </div>
-
-    <!-- Main Panel -->
-    <div class="main-panel">
-        <div class="content-wrapper">
-            <div class="page-header">
-                <h2 class="page-title">Aptitude Problems - Number Series</h2>
-            </div>
-
-            <div class="problems-container">
-                <!-- Problem 1 -->
-                <div class="problem-card">
-                    <div class="problem-header">Problem 1</div>
-                    <div class="problem-content">
-                        What is the sum of the first 100 natural numbers?
-                    </div>
-                    <div class="btn-group">
-                        <button class="btn-view-solution" onclick="toggleSolution('solution1')">View Solution</button>
-                        <button class="btn-complete" onclick="toggleCompleted(this)">Mark as Complete</button>
-                    </div>
-                    <div id="solution1" class="solution">
-                        <div class="solution-content">
-                            The sum of the first 100 natural numbers is given by the formula \( \frac{n(n+1)}{2} \). 
-                            For \( n = 100 \), the sum is 5050.
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Problem 2 -->
-                <div class="problem-card">
-                    <div class="problem-header">Problem 2</div>
-                    <div class="problem-content">
-                        If a number is divided by 6, the remainder is 3. If the same number is divided by 4, the remainder is 1. What is the number?
-                    </div>
-                    <div class="btn-group">
-                        <button class="btn-view-solution" onclick="toggleSolution('solution2')">View Solution</button>
-                        <button class="btn-complete" onclick="toggleCompleted(this)">Mark as Complete</button>
-                    </div>
-                    <div id="solution2" class="solution">
-                        <div class="solution-content">
-                            Let's solve this step by step:
-                            1. Let the number be n
-                            2. When divided by 6: n = 6q + 3 (where q is some integer)
-                            3. When divided by 4: n = 4p + 1 (where p is some integer)
-                            4. The least number satisfying both conditions is 15
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Add more problems here -->
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Scripts -->
-<script src="{{ url_for('static', filename='assets/js/jquery.3.2.1.min.js') }}" type="text/javascript"></script>
-<script src="{{ url_for('static', filename='assets/js/bootstrap.min.js') }}" type="text/javascript"></script>
-<script src="{{ url_for('static', filename='assets/js/light-bootstrap-dashboard.js') }}"></script>
-
-<script>
-    function toggleSolution(solutionId) {
-        const solution = document.getElementById(solutionId);
-        if (solution.style.display === 'none' || !solution.style.display) {
-            solution.style.display = 'block';
-        } else {
-            solution.style.display = 'none';
-        }
-    }
-
-    function toggleCompleted(button) {
-        if (!button.classList.contains('completed')) {
-            button.textContent = 'Completed';
-            button.classList.add('completed');
-        } else {
-            button.textContent = 'Mark as Complete';
-            button.classList.remove('completed');
-        }
-    }
-</script>
-
-</body>
-</html>
+{% block problems %}
+    <tr data-problem-id="n1">
+        <td>1</td>
+        <td>Number Series</td>
+        <td>Easy</td>
+    </tr>
+    <tr data-problem-id="n2">
+        <td>2</td>
+        <td>LCM and HCF</td>
+        <td>Easy</td>
+    </tr>
+    <tr data-problem-id="n3">
+        <td>3</td>
+        <td>Divisibility Rules</td>
+        <td>Easy</td>
+    </tr>
+    <tr data-problem-id="n4">
+        <td>4</td>
+        <td>Prime Numbers</td>
+        <td>Medium</td>
+    </tr>
+    <tr data-problem-id="n5">
+        <td>5</td>
+        <td>Decimal Fractions</td>
+        <td>Medium</td>
+    </tr>
+    <tr data-problem-id="n6">
+        <td>6</td>
+        <td>Square Roots</td>
+        <td>Medium</td>
+    </tr>
+    <tr data-problem-id="n7">
+        <td>7</td>
+        <td>Cube Roots</td>
+        <td>Medium</td>
+    </tr>
+    <tr data-problem-id="n8">
+        <td>8</td>
+        <td>Number Properties</td>
+        <td>Hard</td>
+    </tr>
+    <tr data-problem-id="n9">
+        <td>9</td>
+        <td>Remainders</td>
+        <td>Hard</td>
+    </tr>
+    <tr data-problem-id="n10">
+        <td>10</td>
+        <td>Factorization</td>
+        <td>Hard</td>
+    </tr>
+{% endblock %}

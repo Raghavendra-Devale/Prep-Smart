@@ -1,278 +1,46 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PrepSmart - Math Practice</title>
-    <link rel="icon" type="image/png" href="assets/img/favicon.ico">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+{% extends "dsa/dsa_base.html" %}
 
-     <!-- Bootstrap core CSS -->
-<link href="{{ url_for('static', filename='assets/css/bootstrap.min.css') }}" rel="stylesheet" />
+{% block topic_title %}Stacks and Queues{% endblock %}
 
-<!-- Animation library for notifications -->
-<link href="{{ url_for('static', filename='assets/css/animate.min.css') }}" rel="stylesheet" />
-
-<!-- Light Bootstrap Table core CSS -->
-<link href="{{ url_for('static', filename='assets/css/light-bootstrap-dashboard.css') }}" rel="stylesheet" />
-
-<!-- CSS for Demo Purpose -->
-<link href="{{ url_for('static', filename='assets/css/demo.css') }}" rel="stylesheet" />
-
-<!-- Fonts and icons -->
-<link href="http://maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css?family=Roboto:400,700,300" rel="stylesheet" type="text/css">
-<link href="{{ url_for('static', filename='assets/css/pe-icon-7-stroke.css') }}" rel="stylesheet" />
-    
-</head>
-<body>
-    <div class="wrapper">
-        <!-- Sidebar -->
-        <div class="sidebar" data-color="purple">
-            <div class="sidebar-wrapper">
-                <div class="logo">
-                    <a href="#" class="simple-text">
-                        Prep_Smart
-                    </a>
-                </div>
-    
-                <ul class="nav">
-                    <li class="active">
-                        <a href="{{ url_for('dashboard') }}">
-                            <i class="pe-7s-graph"></i>
-                            <p>Dashboard</p>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="{{ url_for('user') }}">
-                            <i class="pe-7s-user"></i>
-                            <p>User Profile</p>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="{{ url_for('aptitude') }}">
-                            <i class="pe-7s-note2"></i>
-                            <p>Aptitude Preparation</p>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="{{ url_for('communication') }}">
-                            <i class="pe-7s-news-paper"></i>
-                            <p>Communication Skills</p>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="{{ url_for('dsa') }}">
-                            <i class="pe-7s-science"></i>
-                            <p>DSA</p>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="{{ url_for('interview') }}">
-                            <i class="pe-7s-map-marker"></i>
-                            <p>Interview Preparation</p>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="{{ url_for('notifications') }}">
-                            <i class="pe-7s-bell"></i>
-                            <p>Notifications</p>
-                        </a>
-                    </li>
-                    <li class="active-pro">
-                        <a href="{{ url_for('home') }}">
-                            <i class="pe-7s-rocket"></i>
-                            <p>Home</p>
-                        </a>
-                    </li>
-                </ul>
-                
-            </div>
-        </div>
-
-        <!-- Main Panel -->
-        <div class="main-panel">
-            <!-- Navbar -->
-            <nav class="navbar navbar-default">
-                <div class="container-fluid">
-                    <div class="navbar-header">
-                        <a class="navbar-brand" href="#">Basic programming </a>
-                    </div>
-                </div>
-            </nav>
-            <div class="content">
-                <div class="container-fluid">
-                    <div class="row">
-                        <div class="col-md-12">
-                            <div class="card">
-                                <div class="header">
-                                    <h4 class="title">Stacks and Queues Problems</h4>
-                                    <p class="category">Practice these fundamental data structures to master LIFO and FIFO operations</p>
-                                </div>
-                                <div class="content">
-                                    <div class="table-responsive">
-                                        <table class="table table-hover">
-                                            <thead>
-                                                <tr>
-                                                    <th>Problem</th>
-                                                    <th>Description</th>
-                                                    <th>Difficulty</th>
-                                                    <th>Practice Link</th>
-                                                    <th>Video Solution</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                    <td>Valid Parentheses</td>
-                                                    <td>Determine if a string of parentheses is valid using a stack. Learn basic stack operations and bracket matching.</td>
-                                                    <td>Easy</td>
-                                                    <td><a href="https://leetcode.com/problems/valid-parentheses/" target="_blank">LeetCode</a></td>
-                                                    <td><a href="https://www.youtube.com/watch?v=WTzjTskDFMg" target="_blank">Watch Solution</a></td>
-                                                </tr>
-                                                <tr>
-                                                    <td>Implement Stack using Arrays</td>
-                                                    <td>Implement a stack data structure using arrays with push, pop, and peek operations.</td>
-                                                    <td>Easy</td>
-                                                    <td><a href="https://practice.geeksforgeeks.org/problems/implement-stack-using-array/1" target="_blank">GeeksforGeeks</a></td>
-                                                    <td><a href="https://www.youtube.com/watch?v=GYptUgnIM_I" target="_blank">Watch Solution</a></td>
-                                                </tr>
-                                                <tr>
-                                                    <td>Queue Implementation</td>
-                                                    <td>Implement a queue using arrays with enqueue, dequeue, and front operations.</td>
-                                                    <td>Easy</td>
-                                                    <td><a href="https://practice.geeksforgeeks.org/problems/implement-queue-using-array/1" target="_blank">GeeksforGeeks</a></td>
-                                                    <td><a href="https://www.youtube.com/watch?v=M6GnoUDpqEE" target="_blank">Watch Solution</a></td>
-                                                </tr>
-                                                <tr>
-                                                    <td>Stack using Queues</td>
-                                                    <td>Implement a stack using queues. Practice queue operations to simulate stack behavior.</td>
-                                                    <td>Medium</td>
-                                                    <td><a href="https://leetcode.com/problems/implement-stack-using-queues/" target="_blank">LeetCode</a></td>
-                                                    <td><a href="https://www.youtube.com/watch?v=jDZQKzEtbYQ" target="_blank">Watch Solution</a></td>
-                                                </tr>
-                                                <tr>
-                                                    <td>Queue using Stacks</td>
-                                                    <td>Implement a queue using stacks. Learn how to use stack operations to simulate queue behavior.</td>
-                                                    <td>Medium</td>
-                                                    <td><a href="https://leetcode.com/problems/implement-queue-using-stacks/" target="_blank">LeetCode</a></td>
-                                                    <td><a href="https://www.youtube.com/watch?v=3Et9MrMc02A" target="_blank">Watch Solution</a></td>
-                                                </tr>
-                                                <tr>
-                                                    <td>Min Stack Design</td>
-                                                    <td>Design a stack that supports push, pop, top, and retrieving the minimum element in constant time.</td>
-                                                    <td>Medium</td>
-                                                    <td><a href="https://leetcode.com/problems/min-stack/" target="_blank">LeetCode</a></td>
-                                                    <td><a href="https://www.youtube.com/watch?v=qkLl7nAwDPo" target="_blank">Watch Solution</a></td>
-                                                </tr>
-                                                <tr>
-                                                    <td>Circular Queue</td>
-                                                    <td>Design and implement a circular queue data structure. Handle wrap-around cases efficiently.</td>
-                                                    <td>Medium</td>
-                                                    <td><a href="https://leetcode.com/problems/design-circular-queue/" target="_blank">LeetCode</a></td>
-                                                    <td><a href="https://www.youtube.com/watch?v=aBbsfn863oA" target="_blank">Watch Solution</a></td>
-                                                </tr>
-                                                <tr>
-                                                    <td>Next Greater Element</td>
-                                                    <td>Find the next greater element for each element in an array using stack. Practice monotonic stack concept.</td>
-                                                    <td>Medium</td>
-                                                    <td><a href="https://leetcode.com/problems/next-greater-element-i/" target="_blank">LeetCode</a></td>
-                                                    <td><a href="https://www.youtube.com/watch?v=NXOOYYwpbg4" target="_blank">Watch Solution</a></td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        <script>
-            // Add progress tracking buttons and functionality
-            document.addEventListener('DOMContentLoaded', function() {
-                const rows = document.querySelectorAll('tbody tr');
-                
-                rows.forEach((row, index) => {
-                    // Create button cell
-                    const buttonCell = document.createElement('td');
-                    const button = document.createElement('button');
-                    button.className = 'btn btn-default btn-sm';
-                    button.innerHTML = 'Mark Complete';
-                    button.onclick = function() {
-                        toggleProblemStatus(index);
-                    };
-                    
-                    // Add button to row
-                    buttonCell.appendChild(button);
-                    row.appendChild(buttonCell);
-                });
-
-                // Load saved progress
-                loadProgress();
-            });
-
-            function toggleProblemStatus(problemIndex) {
-                // Get saved progress
-                let progress = JSON.parse(localStorage.getItem('basicProgrammingProgress') || '{}');
-                
-                // Toggle status
-                progress[problemIndex] = !progress[problemIndex];
-                
-                // Save updated progress
-                localStorage.setItem('basicProgrammingProgress', JSON.stringify(progress));
-                
-                // Update button appearance
-                updateButtonStatus(problemIndex, progress[problemIndex]);
-                
-                // Update progress count
-                updateProgressCount();
-            }
-
-            function loadProgress() {
-                const progress = JSON.parse(localStorage.getItem('basicProgrammingProgress') || '{}');
-                
-                // Update each button's status
-                Object.keys(progress).forEach(index => {
-                    if(progress[index]) {
-                        updateButtonStatus(index, true);
-                    }
-                });
-                
-                updateProgressCount();
-            }
-
-            function updateButtonStatus(index, completed) {
-                const button = document.querySelectorAll('tbody tr')[index].lastElementChild.querySelector('button');
-                if(completed) {
-                    button.className = 'btn btn-success btn-sm';
-                    button.innerHTML = 'Completed';
-                } else {
-                    button.className = 'btn btn-default btn-sm';
-                    button.innerHTML = 'Mark Complete';
-                }
-            }
-
-            function updateProgressCount() {
-                const progress = JSON.parse(localStorage.getItem('basicProgrammingProgress') || '{}');
-                const completedCount = Object.values(progress).filter(Boolean).length;
-                const totalProblems = document.querySelectorAll('tbody tr').length;
-                
-                // Create or update progress display
-                let progressDisplay = document.getElementById('progress-display');
-                if (!progressDisplay) {
-                    progressDisplay = document.createElement('div');
-                    progressDisplay.id = 'progress-display';
-                    progressDisplay.style.textAlign = 'center';
-                    progressDisplay.style.margin = '20px 0';
-                    document.querySelector('.content').appendChild(progressDisplay);
-                }
-                
-                progressDisplay.innerHTML = `Progress: ${completedCount}/${totalProblems} problems completed`;
-            }
-        </script>
-        </div>
-    </div>
-
-    
-</body>
-</html>
+{% block problems %}
+    <tr>
+        <td>1</td>
+        <td>Valid Parentheses</td>
+        <td>Easy</td>
+    </tr>
+    <tr>
+        <td>2</td>
+        <td>Implement Stack using Arrays</td>
+        <td>Easy</td>
+    </tr>
+    <tr>
+        <td>3</td>
+        <td>Queue Implementation</td>
+        <td>Easy</td>
+    </tr>
+    <tr>
+        <td>4</td>
+        <td>Stack using Queues</td>
+        <td>Medium</td>
+    </tr>
+    <tr>
+        <td>5</td>
+        <td>Queue using Stacks</td>
+        <td>Medium</td>
+    </tr>
+    <tr>
+        <td>6</td>
+        <td>Min Stack Design</td>
+        <td>Medium</td>
+    </tr>
+    <tr>
+        <td>7</td>
+        <td>Circular Queue</td>
+        <td>Medium</td>
+    </tr>
+    <tr>
+        <td>8</td>
+        <td>Next Greater Element</td>
+        <td>Medium</td>
+    </tr>
+{% endblock %}

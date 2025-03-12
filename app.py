@@ -141,50 +141,84 @@ def logout():
     return redirect(url_for('home'))  # Redirect to homepage after logout
 
 def get_student_progress():
-    conn = sqlite3.connect("placement_preparation.db")
-    cursor = conn.cursor()
-
-    # ✅ Get student ID from session
-    cursor.execute("SELECT id FROM students WHERE user_id = ?", (session['user_id'],))
-    result = cursor.fetchone()
-    if not result:
+    if 'user_id' not in session:
         return {}
 
-    student_id = result[0]
+    try:
+        db = get_db_connection()
+        cursor = db.cursor()
 
-    # ✅ Fix mapping to topic names
-    query = """
-    SELECT sp.student_id, pt.topic_name, sp.completed_questions, sp.total_questions
-    FROM student_progress sp
-    JOIN progress_topics pt ON sp.topic_id = pt.topic_id
-    WHERE sp.student_id = ?;
-    """
-    cursor.execute(query, (student_id,))
-    progress_data = cursor.fetchall()
-    conn.close()
+        # Get student ID from session
+        cursor.execute("SELECT id FROM students WHERE user_id = ?", (session['user_id'],))
+        result = cursor.fetchone()
+        if not result:
+            return {}
 
-    # ✅ Correct mapping
-    topic_map = {
-    'Data Structures': 'DSA',
-    'Soft Skills': 'Communication',
-    'Maths': 'Aptitude'
-}
+        student_id = result[0]
 
+        # Get DSA progress
+        cursor.execute("""
+            SELECT COUNT(*) as completed
+            FROM student_answers sa
+            JOIN progress_topics pt ON sa.topic_id = pt.topic_id
+            WHERE sa.student_id = ? AND pt.parent_topic = 'DSA'
+        """, (student_id,))
+        dsa_completed = cursor.fetchone()[0] or 0
 
-    progress_dict = {"DSA": 0, "Communication": 0, "Aptitude": 0}
-    for _, topic, completed, total in progress_data:
-        print(f"🔎 Topic from DB: {topic}, Completed: {completed}, Total: {total}")
-        mapped_topic = topic_map.get(topic)
-        if mapped_topic:
-            progress_dict[mapped_topic] = (completed / total) * 100 if total > 0 else 0
+        cursor.execute("""
+            SELECT SUM(total_questions) as total
+            FROM progress_topics
+            WHERE parent_topic = 'DSA'
+        """)
+        dsa_total = cursor.fetchone()[0] or 0
 
-    print("✅ Mapped Progress Data:", progress_dict)  # Debugging
-    return progress_dict
+        # Get Communication progress
+        cursor.execute("""
+            SELECT COUNT(*) as completed
+            FROM student_answers sa
+            JOIN progress_topics pt ON sa.topic_id = pt.topic_id
+            WHERE sa.student_id = ? AND pt.parent_topic = 'Communication'
+        """, (student_id,))
+        comm_completed = cursor.fetchone()[0] or 0
 
+        cursor.execute("""
+            SELECT SUM(total_questions) as total
+            FROM progress_topics
+            WHERE parent_topic = 'Communication'
+        """)
+        comm_total = cursor.fetchone()[0] or 0
 
+        # Get Aptitude progress
+        cursor.execute("""
+            SELECT COUNT(*) as completed
+            FROM student_answers sa
+            JOIN progress_topics pt ON sa.topic_id = pt.topic_id
+            WHERE sa.student_id = ? AND pt.parent_topic = 'Aptitude'
+        """, (student_id,))
+        apti_completed = cursor.fetchone()[0] or 0
 
+        cursor.execute("""
+            SELECT SUM(total_questions) as total
+            FROM progress_topics
+            WHERE parent_topic = 'Aptitude'
+        """)
+        apti_total = cursor.fetchone()[0] or 0
 
+        progress_dict = {
+            "DSA": (dsa_completed / dsa_total * 100) if dsa_total > 0 else 0,
+            "Communication": (comm_completed / comm_total * 100) if comm_total > 0 else 0,
+            "Aptitude": (apti_completed / apti_total * 100) if apti_total > 0 else 0
+        }
 
+        print("Progress Data:", progress_dict)  # Debug print
+        return progress_dict
+
+    except Exception as e:
+        print(f"Error in get_student_progress: {e}")
+        return {}
+    finally:
+        if 'db' in locals():
+            db.close()
 
 @app.route('/get_progress', methods=['GET'])
 def get_progress():
@@ -192,15 +226,15 @@ def get_progress():
         return jsonify({'success': False, 'message': 'Not logged in'}), 401
     
     progress_data = get_student_progress()
-    print("Progress Data:", progress_data)  # Debugging line
-    
     if not progress_data:
         return jsonify({'success': False, 'message': 'No progress found'})
 
-    return jsonify(progress_data)
-
-
-
+    return jsonify({
+        'success': True,
+        'DSA': progress_data.get('DSA', 0),
+        'Communication': progress_data.get('Communication', 0),
+        'Aptitude': progress_data.get('Aptitude', 0)
+    })
 
 @app.route('/update_progress', methods=['POST'])
 def update_progress():
@@ -222,15 +256,11 @@ def update_progress():
         topic_id = data.get('topic_id')
         print(f"✅ Extracted Data - Question ID: {question_id}, Topic ID: {topic_id}")
 
-        # Check session data
-        user_id = session.get('user_id')
-        print(f"✅ User ID from session: {user_id}")
-
         db = get_db_connection()
         cursor = db.cursor()
 
         # Get student ID from user_id
-        cursor.execute("SELECT id FROM students WHERE user_id = ?", (user_id,))
+        cursor.execute("SELECT id FROM students WHERE user_id = ?", (session['user_id'],))
         result = cursor.fetchone()
         if not result:
             print("🚨 No student found for user_id")
@@ -239,147 +269,150 @@ def update_progress():
         student_id = result[0]
         print(f"✅ Found student ID: {student_id}")
 
-        # ✅ Try to insert into student_answers (will fail if duplicate due to composite key)
-        try:
-            cursor.execute("""
-                INSERT INTO student_answers 
-                (student_id, question_id, given_answer, is_correct) 
-                VALUES (?, ?, '', 1)
-            """, (student_id, question_id))
-            print("✅ Marked question as completed")
-        except sqlite3.IntegrityError:
-            print("🚨 Question already attempted — Skipping update!")
+        # Check if this question is already completed
+        cursor.execute("""
+            SELECT * FROM student_answers 
+            WHERE student_id = ? AND question_id = ? AND topic_id = ?
+        """, (student_id, question_id, topic_id))
+        
+        if cursor.fetchone():
+            print("🚨 Question already completed!")
             return jsonify({'success': False, 'message': 'Question already completed!'})
 
-        # ✅ Update student progress
+        # Mark question as completed
         cursor.execute("""
-            SELECT progress_id, completed_questions, total_questions 
-            FROM student_progress 
+            INSERT INTO student_answers 
+            (student_id, question_id, topic_id, given_answer, is_correct) 
+            VALUES (?, ?, ?, '', 1)
+        """, (student_id, question_id, topic_id))
+
+        # Get total questions for current topic
+        cursor.execute("""
+            SELECT total_questions FROM progress_topics 
+            WHERE topic_id = ?
+        """, (topic_id,))
+        topic_total = cursor.fetchone()[0]
+
+        # Get current completed questions count
+        cursor.execute("""
+            SELECT COUNT(*) 
+            FROM student_answers 
             WHERE student_id = ? AND topic_id = ?
         """, (student_id, topic_id))
-        existing = cursor.fetchone()
+        completed_questions = cursor.fetchone()[0]
 
-        if existing:
-            progress_id, completed_questions, total_questions = existing
-            print(f"✅ Existing progress: {completed_questions}/{total_questions}")
+        # Update progress for the specific topic
+        cursor.execute("""
+            INSERT OR REPLACE INTO student_progress 
+            (student_id, topic_id, completed_questions, total_questions, is_completed) 
+            VALUES (?, ?, ?, ?, ?)
+        """, (
+            student_id, 
+            topic_id, 
+            completed_questions, 
+            topic_total, 
+            1 if completed_questions >= topic_total else 0
+        ))
 
-            if completed_questions < total_questions:
-                new_count = completed_questions + 1
-                cursor.execute("""
-                    UPDATE student_progress
-                    SET completed_questions = ?,
-                        is_completed = CASE WHEN completed_questions + 1 = total_questions THEN 1 ELSE 0 END,
-                        last_updated = CURRENT_TIMESTAMP
-                    WHERE progress_id = ?
-                """, (new_count, progress_id))
-                print(f"✅ Updated progress to {new_count}/{total_questions}")
-            else:
-                print("✅ Already completed — No update needed")
-        else:
-            print("✅ No existing progress, inserting new record...")
-            cursor.execute("""
-                INSERT INTO student_progress 
-                (student_id, topic_id, completed_questions, total_questions, is_completed) 
-                VALUES (?, ?, 1, 8, 0)
-            """, (student_id, topic_id))
-            print("✅ Inserted new progress record")
+        # Update overall DSA progress
+        cursor.execute("""
+            SELECT SUM(total_questions) 
+            FROM progress_topics 
+            WHERE parent_topic = 'DSA'
+        """)
+        total_dsa_questions = cursor.fetchone()[0]
+
+        cursor.execute("""
+            SELECT COUNT(*) 
+            FROM student_answers sa
+            JOIN progress_topics pt ON sa.topic_id = pt.topic_id
+            WHERE sa.student_id = ? AND pt.parent_topic = 'DSA'
+        """, (student_id,))
+        completed_dsa_questions = cursor.fetchone()[0]
+
+        # Update or insert overall DSA progress
+        cursor.execute("""
+            INSERT OR REPLACE INTO dsa_overall_progress 
+            (student_id, completed_questions, total_questions, is_completed, last_updated)
+            VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+        """, (
+            student_id, 
+            completed_dsa_questions, 
+            total_dsa_questions,
+            1 if completed_dsa_questions >= total_dsa_questions else 0
+        ))
 
         db.commit()
         print("✅ Successfully updated progress!")
-        return jsonify({'success': True})
+        return jsonify({
+            'success': True,
+            'topic_progress': completed_questions,
+            'total_topic_questions': topic_total,
+            'dsa_progress': completed_dsa_questions,
+            'total_dsa_questions': total_dsa_questions
+        })
 
     except Exception as e:
         print(f"🚨 Error updating progress: {e}")
-        db.rollback()
+        if db:
+            db.rollback()
         return jsonify({'success': False, 'message': str(e)}), 500
     finally:
-        db.close()
-
-
-
+        if db:
+            db.close()
 
 # Update Student Progress
-@app.route('/student_progress', methods=['GET', 'POST'])
+@app.route('/student_progress', methods=['GET'])
 def student_progress():
     if 'user_id' not in session:
         return jsonify({'success': False, 'message': 'Not logged in'}), 401
 
-    db = get_db_connection()
-    cursor = db.cursor()
+    try:
+        topic_id = request.args.get('topic_id')
+        if not topic_id:
+            return jsonify({'success': False, 'message': 'Topic ID is required'}), 400
 
-    # Get student ID based on user_id
-    cursor.execute("SELECT id FROM students WHERE user_id = ?", (session['user_id'],))
-    result = cursor.fetchone()
-    if not result:
-        return jsonify({'success': False, 'message': 'Student not found'}), 404
+        db = get_db_connection()
+        cursor = db.cursor()
 
-    student_id = result[0]
+        # Get student ID from user_id
+        cursor.execute("SELECT id FROM students WHERE user_id = ?", (session['user_id'],))
+        result = cursor.fetchone()
+        if not result:
+            return jsonify({'success': False, 'message': 'Student not found'}), 404
 
-    if request.method == 'GET':
-        try:
-            topic_id = request.args.get('topic_id')
-            cursor.execute("""
-                SELECT COUNT(*) as completed_count
-                FROM student_progress
-                WHERE student_id = ? AND topic_id = ? AND is_completed = 1
-            """, (student_id, topic_id))
-            result = cursor.fetchone()
-            completed_count = result[0] if result else 0
-            return jsonify({'success': True, 'completed_questions': completed_count})
-        except Exception as e:
-            print(f"Error fetching progress: {e}")
-            return jsonify({'success': False, 'message': str(e)}), 500
-        finally:
+        student_id = result[0]
+
+        # Get topic-specific progress
+        cursor.execute("""
+            SELECT COUNT(*) as completed_count
+            FROM student_answers
+            WHERE student_id = ? AND topic_id = ?
+        """, (student_id, topic_id))
+        topic_result = cursor.fetchone()
+        topic_completed = topic_result[0] if topic_result else 0
+
+        # Get overall DSA progress
+        cursor.execute("""
+            SELECT completed_questions, total_questions
+            FROM dsa_overall_progress
+            WHERE student_id = ?
+        """, (student_id,))
+        dsa_progress = cursor.fetchone()
+
+        return jsonify({
+            'success': True,
+            'completed_questions': topic_completed,
+            'dsa_completed': dsa_progress[0] if dsa_progress else 0,
+            'dsa_total': dsa_progress[1] if dsa_progress else 0
+        })
+
+    except Exception as e:
+        print(f"Error fetching progress: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+    finally:
+        if db:
             db.close()
-
-    elif request.method == 'POST':
-        try:
-            data = request.get_json()
-            question_id = data.get('question_id')
-            topic_name = data.get('topic_name')
-
-            # Get topic ID from name
-            cursor.execute("SELECT topic_id FROM progress_topics WHERE topic_name = ?", (topic_name,))
-            topic = cursor.fetchone()
-            if not topic:
-                return jsonify({'success': False, 'message': 'Topic not found'}), 404
-
-            topic_id = topic[0]
-
-            # Check if progress already exists
-            cursor.execute("""
-                SELECT progress_id, completed_questions 
-                FROM student_progress 
-                WHERE student_id = ? AND topic_id = ?
-            """, (student_id, topic_id))
-            existing = cursor.fetchone()
-
-            if existing:
-                new_count = existing[1] + 1
-                cursor.execute("""
-                    UPDATE student_progress
-                    SET completed_questions = ?,
-                        last_updated = CURRENT_TIMESTAMP
-                    WHERE progress_id = ?
-                """, (new_count, existing[0]))
-            else:
-                cursor.execute("""
-                    INSERT INTO student_progress 
-                    (student_id, topic_id, completed_questions, total_questions) 
-                    VALUES (?, ?, 1, 8)  -- Assuming 8 total questions
-                """, (student_id, topic_id))
-
-            db.commit()
-            return jsonify({'success': True})
-        except Exception as e:
-            print(f"Error updating progress: {e}")
-            db.rollback()
-            return jsonify({'success': False, 'message': str(e)}), 500
-        finally:
-            db.close()
-
-
-
 
 # Unified Dashboard Route
 @app.route('/dashboard')
@@ -437,7 +470,6 @@ def student_dashboard():
         progress_summary=progress_summary
     )
 
-
 # Company Dashboard
 @app.route('/company_dashboard')
 def company_dashboard():
@@ -482,7 +514,6 @@ def user_profile():
 
     return render_template('student/user.html', student=student)
 
-
 def get_topic_id(topic_name):
     topic_map = {
         'basic_programming': 1,
@@ -503,8 +534,6 @@ def debug_db():
     conn.close()
     
     return {"tables": [table[0] for table in tables]}  # Check if 'students' exists
-
-
 
 @app.route('/update_aptitude_progress', methods=['POST'])
 def update_aptitude_progress():
@@ -548,7 +577,6 @@ def update_aptitude_progress():
         if db:
             db.close()
 
-
 @app.route('/get_aptitude_progress')
 def get_aptitude_progress():
     if 'user_id' not in session:
@@ -572,7 +600,6 @@ def get_aptitude_progress():
         return jsonify({'success': False, 'message': str(e)}), 500
     finally:
         db.close()
-
 
 @app.route('/user')
 def user():
@@ -680,11 +707,11 @@ def dsa_recursion_and_backtracking():
 
 @app.route('/dsa/greedy-algorithms')
 def dsa_greedy_algorithms():
-    return render_template('dsa/dsa_greedy_algorithms.html')
+    return render_template('dsa/dsa_Greedy_Algrothms.html')
 
 @app.route('/dsa/bit-manipulation')
 def dsa_bit_manipulation():
-    return render_template('dsa/dsa_bit_manipulation.html')
+    return render_template('dsa/dsa_BitManipulation.html')
 
 @app.route('/notifications')
 def notifications():
@@ -692,3 +719,4 @@ def notifications():
 
 if __name__ == '__main__':
     app.run(debug=True)
+#if this works out i'll ask you to do the same to apti

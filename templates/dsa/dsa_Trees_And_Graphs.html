@@ -1,278 +1,56 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PrepSmart - Math Practice</title>
-    <link rel="icon" type="image/png" href="assets/img/favicon.ico">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+{% extends "dsa/dsa_base.html" %}
 
-     <!-- Bootstrap core CSS -->
-<link href="{{ url_for('static', filename='assets/css/bootstrap.min.css') }}" rel="stylesheet" />
+{% block topic_title %}Trees and Graphs{% endblock %}
 
-<!-- Animation library for notifications -->
-<link href="{{ url_for('static', filename='assets/css/animate.min.css') }}" rel="stylesheet" />
-
-<!-- Light Bootstrap Table core CSS -->
-<link href="{{ url_for('static', filename='assets/css/light-bootstrap-dashboard.css') }}" rel="stylesheet" />
-
-<!-- CSS for Demo Purpose -->
-<link href="{{ url_for('static', filename='assets/css/demo.css') }}" rel="stylesheet" />
-
-<!-- Fonts and icons -->
-<link href="http://maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css?family=Roboto:400,700,300" rel="stylesheet" type="text/css">
-<link href="{{ url_for('static', filename='assets/css/pe-icon-7-stroke.css') }}" rel="stylesheet" />
-    
-</head>
-<body>
-    <div class="wrapper">
-        <!-- Sidebar -->
-        <div class="sidebar" data-color="purple">
-            <div class="sidebar-wrapper">
-                <div class="logo">
-                    <a href="#" class="simple-text">
-                        Prep_Smart
-                    </a>
-                </div>
-    
-                <ul class="nav">
-                    <li class="active">
-                        <a href="{{ url_for('dashboard') }}">
-                            <i class="pe-7s-graph"></i>
-                            <p>Dashboard</p>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="{{ url_for('user') }}">
-                            <i class="pe-7s-user"></i>
-                            <p>User Profile</p>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="{{ url_for('aptitude') }}">
-                            <i class="pe-7s-note2"></i>
-                            <p>Aptitude Preparation</p>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="{{ url_for('communication') }}">
-                            <i class="pe-7s-news-paper"></i>
-                            <p>Communication Skills</p>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="{{ url_for('dsa') }}">
-                            <i class="pe-7s-science"></i>
-                            <p>DSA</p>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="{{ url_for('interview') }}">
-                            <i class="pe-7s-map-marker"></i>
-                            <p>Interview Preparation</p>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="{{ url_for('notifications') }}">
-                            <i class="pe-7s-bell"></i>
-                            <p>Notifications</p>
-                        </a>
-                    </li>
-                    <li class="active-pro">
-                        <a href="{{ url_for('home') }}">
-                            <i class="pe-7s-rocket"></i>
-                            <p>Home</p>
-                        </a>
-                    </li>
-                </ul>
-                
-            </div>
-        </div>
-
-        <!-- Main Panel -->
-        <div class="main-panel">
-            <!-- Navbar -->
-            <nav class="navbar navbar-default">
-                <div class="container-fluid">
-                    <div class="navbar-header">
-                        <a class="navbar-brand" href="#">Trees and Graphs</a>
-                    </div>
-                </div>
-            </nav>
-            <div class="content">
-                <div class="container-fluid">
-                    <div class="row">
-                        <div class="col-md-12">
-                            <div class="card">
-                                <div class="header">
-                                    <h4 class="title">Trees and Graphs Problems</h4>
-                                    <p class="category">Practice these fundamental tree and graph algorithms to master data structures</p>
-                                </div>
-                                <div class="content">
-                                    <div class="table-responsive">
-                                        <table class="table table-hover">
-                                            <thead>
-                                                <tr>
-                                                    <th>Problem</th>
-                                                    <th>Description</th>
-                                                    <th>Difficulty</th>
-                                                    <th>Practice Link</th>
-                                                    <th>Video Solution</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                    <td>Binary Tree Implementation</td>
-                                                    <td>Create a basic binary tree structure and implement fundamental operations like insertion, deletion, and traversal methods (inorder, preorder, postorder).</td>
-                                                    <td>Easy</td>
-                                                    <td><a href="https://practice.geeksforgeeks.org/problems/binary-tree-implementation/1" target="_blank">GeeksforGeeks</a></td>
-                                                    <td><a href="https://www.youtube.com/watch?v=6oL-0TdVy28" target="_blank">Watch Solution</a></td>
-                                                </tr>
-                                                <tr>
-                                                    <td>Binary Tree Level Order Traversal</td>
-                                                    <td>Implement level-order traversal of a binary tree using queue data structure. Print nodes level by level.</td>
-                                                    <td>Easy</td>
-                                                    <td><a href="https://leetcode.com/problems/binary-tree-level-order-traversal/" target="_blank">LeetCode</a></td>
-                                                    <td><a href="https://www.youtube.com/watch?v=6ZnyEApgFYg" target="_blank">Watch Solution</a></td>
-                                                </tr>
-                                                <tr>
-                                                    <td>Maximum Depth of Binary Tree</td>
-                                                    <td>Find the maximum depth (height) of a binary tree using recursive and iterative approaches.</td>
-                                                    <td>Easy</td>
-                                                    <td><a href="https://leetcode.com/problems/maximum-depth-of-binary-tree/" target="_blank">LeetCode</a></td>
-                                                    <td><a href="https://www.youtube.com/watch?v=YT1994beXn0" target="_blank">Watch Solution</a></td>
-                                                </tr>
-                                                <tr>
-                                                    <td>Validate Binary Search Tree</td>
-                                                    <td>Check if a binary tree is a valid binary search tree (BST). Learn about BST properties and inorder traversal.</td>
-                                                    <td>Medium</td>
-                                                    <td><a href="https://leetcode.com/problems/validate-binary-search-tree/" target="_blank">LeetCode</a></td>
-                                                    <td><a href="https://www.youtube.com/watch?v=s6ATEkipzow" target="_blank">Watch Solution</a></td>
-                                                </tr>
-                                                <tr>
-                                                    <td>Graph DFS Implementation</td>
-                                                    <td>Implement Depth-First Search algorithm for a graph. Learn about graph traversal and recursive approach.</td>
-                                                    <td>Medium</td>
-                                                    <td><a href="https://practice.geeksforgeeks.org/problems/depth-first-traversal-for-a-graph/1" target="_blank">GeeksforGeeks</a></td>
-                                                    <td><a href="https://www.youtube.com/watch?v=7fujbpJ0LB4" target="_blank">Watch Solution</a></td>
-                                                </tr>
-                                                <tr>
-                                                    <td>Graph BFS Implementation</td>
-                                                    <td>Implement Breadth-First Search algorithm for a graph. Understand queue usage and level-wise traversal.</td>
-                                                    <td>Medium</td>
-                                                    <td><a href="https://practice.geeksforgeeks.org/problems/bfs-traversal-of-graph/1" target="_blank">GeeksforGeeks</a></td>
-                                                    <td><a href="https://www.youtube.com/watch?v=pcKY4hjDrxk" target="_blank">Watch Solution</a></td>
-                                                </tr>
-                                                <tr>
-                                                    <td>Number of Islands</td>
-                                                    <td>Find the number of islands in a 2D grid. Practice DFS/BFS on grid and connected components concept.</td>
-                                                    <td>Medium</td>
-                                                    <td><a href="https://leetcode.com/problems/number-of-islands/" target="_blank">LeetCode</a></td>
-                                                    <td><a href="https://www.youtube.com/watch?v=pV2kpPD66nE" target="_blank">Watch Solution</a></td>
-                                                </tr>
-                                                <tr>
-                                                    <td>Shortest Path in Binary Matrix</td>
-                                                    <td>Find the shortest path from top-left to bottom-right in a binary matrix. Learn about BFS and path finding.</td>
-                                                    <td>Medium</td>
-                                                    <td><a href="https://leetcode.com/problems/shortest-path-in-binary-matrix/" target="_blank">LeetCode</a></td>
-                                                    <td><a href="https://www.youtube.com/watch?v=CABaqxkO6Zw" target="_blank">Watch Solution</a></td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        <script>
-            // Add progress tracking buttons and functionality
-            document.addEventListener('DOMContentLoaded', function() {
-                const rows = document.querySelectorAll('tbody tr');
-                
-                rows.forEach((row, index) => {
-                    // Create button cell
-                    const buttonCell = document.createElement('td');
-                    const button = document.createElement('button');
-                    button.className = 'btn btn-default btn-sm';
-                    button.innerHTML = 'Mark Complete';
-                    button.onclick = function() {
-                        toggleProblemStatus(index);
-                    };
-                    
-                    // Add button to row
-                    buttonCell.appendChild(button);
-                    row.appendChild(buttonCell);
-                });
-
-                // Load saved progress
-                loadProgress();
-            });
-
-            function toggleProblemStatus(problemIndex) {
-                // Get saved progress
-                let progress = JSON.parse(localStorage.getItem('basicProgrammingProgress') || '{}');
-                
-                // Toggle status
-                progress[problemIndex] = !progress[problemIndex];
-                
-                // Save updated progress
-                localStorage.setItem('basicProgrammingProgress', JSON.stringify(progress));
-                
-                // Update button appearance
-                updateButtonStatus(problemIndex, progress[problemIndex]);
-                
-                // Update progress count
-                updateProgressCount();
-            }
-
-            function loadProgress() {
-                const progress = JSON.parse(localStorage.getItem('basicProgrammingProgress') || '{}');
-                
-                // Update each button's status
-                Object.keys(progress).forEach(index => {
-                    if(progress[index]) {
-                        updateButtonStatus(index, true);
-                    }
-                });
-                
-                updateProgressCount();
-            }
-
-            function updateButtonStatus(index, completed) {
-                const button = document.querySelectorAll('tbody tr')[index].lastElementChild.querySelector('button');
-                if(completed) {
-                    button.className = 'btn btn-success btn-sm';
-                    button.innerHTML = 'Completed';
-                } else {
-                    button.className = 'btn btn-default btn-sm';
-                    button.innerHTML = 'Mark Complete';
-                }
-            }
-
-            function updateProgressCount() {
-                const progress = JSON.parse(localStorage.getItem('basicProgrammingProgress') || '{}');
-                const completedCount = Object.values(progress).filter(Boolean).length;
-                const totalProblems = document.querySelectorAll('tbody tr').length;
-                
-                // Create or update progress display
-                let progressDisplay = document.getElementById('progress-display');
-                if (!progressDisplay) {
-                    progressDisplay = document.createElement('div');
-                    progressDisplay.id = 'progress-display';
-                    progressDisplay.style.textAlign = 'center';
-                    progressDisplay.style.margin = '20px 0';
-                    document.querySelector('.content').appendChild(progressDisplay);
-                }
-                
-                progressDisplay.innerHTML = `Progress: ${completedCount}/${totalProblems} problems completed`;
-            }
-        </script>
-        </div>
-    </div>
-
-    
-</body>
-</html>
+{% block problems %}
+    <tr>
+        <td>1</td>
+        <td>Binary Tree Traversals (Inorder, Preorder, Postorder)</td>
+        <td>Easy</td>
+    </tr>
+    <tr>
+        <td>2</td>
+        <td>Level Order Traversal</td>
+        <td>Easy</td>
+    </tr>
+    <tr>
+        <td>3</td>
+        <td>Height of Binary Tree</td>
+        <td>Easy</td>
+    </tr>
+    <tr>
+        <td>4</td>
+        <td>Check if Binary Tree is BST</td>
+        <td>Medium</td>
+    </tr>
+    <tr>
+        <td>5</td>
+        <td>Lowest Common Ancestor</td>
+        <td>Medium</td>
+    </tr>
+    <tr>
+        <td>6</td>
+        <td>DFS and BFS Implementation</td>
+        <td>Medium</td>
+    </tr>
+    <tr>
+        <td>7</td>
+        <td>Detect Cycle in Graph</td>
+        <td>Medium</td>
+    </tr>
+    <tr>
+        <td>8</td>
+        <td>Shortest Path in Unweighted Graph</td>
+        <td>Medium</td>
+    </tr>
+    <tr>
+        <td>9</td>
+        <td>Topological Sort</td>
+        <td>Hard</td>
+    </tr>
+    <tr>
+        <td>10</td>
+        <td>Minimum Spanning Tree</td>
+        <td>Hard</td>
+    </tr>
+{% endblock %}

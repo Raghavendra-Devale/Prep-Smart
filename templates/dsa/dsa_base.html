@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+<script src="{{ url_for('static', filename='js/dsa_progress.js') }}"></script>
+{% endblock %}
+
+{% block content %}
+<div class="content">
+    <h1>{% block topic_title %}DSA Topic{% endblock %}</h1>
+    <div class="problem-list">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Problem</th>
+                    <th>Difficulty</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% block problems %}{% endblock %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %} 
