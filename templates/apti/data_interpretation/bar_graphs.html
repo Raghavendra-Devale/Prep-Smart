@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block page_title %}Bar Graphs{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="card">
+        <div class="header">
+            <h4 class="title">Bar Graphs</h4>
+            <p class="category">Master bar graph problems</p>
+        </div>
+        <div class="content table-responsive table-full-width">
+            <table class="table table-hover table-striped">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Question</th>
+                        <th>Type</th>
+                        <th>Difficulty Level</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for i in range(1, 51) %}
+                    <tr>
+                        <td>{{ i }}</td>
+                        <td class="question-cell">
+                            {% if i == 1 %}
+                            The following bar graph shows the number of books sold by five bookstores in a month. Based on the graph, which bookstore had the highest sales?
+                            <br />
+                            (Image of bar graph here)
+                            {% elif i == 2 %}
+                            The bar graph below shows the average monthly temperature of a city for the year. What is the difference in temperature between the highest and lowest months?
+                            <br />
+                            (Image of bar graph here)
+                            {% elif i == 3 %}
+                            A bar graph represents the number of students enrolled in five different courses. Which course had the least number of students enrolled?
+                            <br />
+                            (Image of bar graph here)
+                            {% else %}
+                            {% if i % 3 == 0 %}
+                            The bar graph shows the number of cars sold by a dealership over a period of 6 months. What was the sales number in month 3?
+                            <br />
+                            (Image of bar graph here)
+                            {% elif i % 2 == 0 %}
+                            The bar graph shows the annual profit made by four companies. Which company had the second-highest profit?
+                            <br />
+                            (Image of bar graph here)
+                            {% else %}
+                            The bar graph displays the number of hours studied by students in different subjects. How many hours did students study Math in total over the 4 months?
+                            <br />
+                            (Image of bar graph here)
+                            {% endif %}
+                            {% endif %}
+                        </td>
+                        <td>Bar Graphs</td>
+                        <td>
+                            {% if i <= 10 %}
+                            Easy
+                            {% elif i <= 30 %}
+                            Medium
+                            {% else %}
+                            Hard
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="#" class="btn btn-success btn-sm" onclick="showExplanation({{ i }})">Answer</a>
+                            <div id="explanation-{{ i }}" class="explanation-box mt-2" style="display: none;">
+                                <strong>Explanation:</strong>
+                                {% if i == 1 %}
+                                The bookstore with the highest sales is Bookstore A, as its bar is the tallest.
+                                {% elif i == 2 %}
+                                The highest temperature was 35°C in July, and the lowest was 10°C in January. The difference is 25°C.
+                                {% elif i == 3 %}
+                                The course with the least students enrolled is Computer Science, based on the shortest bar.
+                                {% elif i % 3 == 0 %}
+                                In month 3, the number of cars sold was 200 based on the third bar.
+                                {% elif i % 2 == 0 %}
+                                The second-highest profit was made by Company B, which is represented by the second tallest bar.
+                                {% else %}
+                                The total number of hours studied for Math is the sum of the bars for Math over the 4 months, which equals 40 hours.
+                                {% endif %}
+                            </div>
+                            <br />
+                            <button class="btn btn-primary btn-sm" onclick="markComplete({{ i }})" id="complete-{{ i }}">Mark as Complete</button>
+                            <span id="status-{{ i }}" style="display:none;" class="ml-2 text-success">Completed</span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+.question-cell {
+    height: 100px; /* Adjust the height as needed */
+    vertical-align: middle;
+}
+</style>
+
+<script>
+const user_id = {{ session['user_id'] }};
+const topic_id = 25; // Update topic_id for Bar Graphs
+
+function showExplanation(id) {
+    let explanationBox = document.getElementById("explanation-" + id);
+    explanationBox.style.display = "block";
+    setTimeout(function() {
+        explanationBox.style.display = "none";
+    }, 5000); // Hide after 5 seconds
+}
+
+function markComplete(id) {
+    let completeButton = document.getElementById("complete-" + id);
+    let statusText = document.getElementById("status-" + id);
+
+    const requestBody = { user_id: user_id, topic_id: topic_id, problem_id: id };
+    console.log('Request Body:', requestBody); // Debugging: Log the request body
+
+    fetch('/mark_complete', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Response Data:', data); // Debugging: Log the response data
+        if (data.status === 'success') {
+            completeButton.style.display = "none";  
+            statusText.style.display = "inline";   
+        } else {
+            alert('Failed to mark as complete');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error); // Debugging: Log the error
+        alert('Failed to mark as complete');
+    });
+}
+</script>
+
+{% endblock %}

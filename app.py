@@ -1,15 +1,26 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 import sqlite3
 from werkzeug.security import generate_password_hash, check_password_hash
-import traceback  # Add this import at the top
+from datetime import datetime, timezone
+import time
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
 
+# Register adapter and converter for datetime
+def adapt_datetime(dt):
+    return dt.isoformat()
+
+def convert_datetime(s):
+    return datetime.fromisoformat(s.decode())
+
+sqlite3.register_adapter(datetime, adapt_datetime)
+sqlite3.register_converter("timestamp", convert_datetime)
+
 # SQLite Configuration
 def get_db_connection():
     try:
-        conn = sqlite3.connect('placement_preparation.db', timeout=20)
+        conn = sqlite3.connect('placement_preparation.db', timeout=20, detect_types=sqlite3.PARSE_DECLTYPES)
         conn.row_factory = sqlite3.Row
         return conn
     except sqlite3.Error as e:
@@ -544,31 +555,65 @@ def update_aptitude_progress():
     db = None
     try:
         data = request.get_json()
-        print("Received data:", data)  # Debug print
+        print("Received data:", data)
         
         problem_id = data.get('problem_id')
+        topic_id = data.get('topic_id')
         is_completed = data.get('status', True)
-        user_id = session['user_id']
-
-        print(f"Processing: user_id={user_id}, problem_id={problem_id}, is_completed={is_completed}")  # Debug print
-
-        db = sqlite3.connect('placement_preparation.db')
+        
+        # Get student ID from user_id
+        db = get_db_connection()
         cursor = db.cursor()
+        
+        cursor.execute("SELECT id FROM students WHERE user_id = ?", (session['user_id'],))
+        result = cursor.fetchone()
+        if not result:
+            return jsonify({'success': False, 'message': 'Student not found'}), 404
+        
+        student_id = result[0]
 
-        # Simple insert or replace operation
+        # Insert or update the problem completion status
         cursor.execute("""
             INSERT OR REPLACE INTO aptitude_progress 
             (student_id, problem_id, is_completed) 
             VALUES (?, ?, ?)
-        """, (user_id, problem_id, is_completed))
+        """, (student_id, problem_id, is_completed))
+        
+        # Count completed problems for this topic
+        cursor.execute("""
+            SELECT COUNT(*) FROM aptitude_progress 
+            WHERE student_id = ? AND problem_id LIKE ? AND is_completed = 1
+        """, (student_id, problem_id[0] + '%'))
+        completed_count = cursor.fetchone()[0]
+        
+        # Get total problems for this topic
+        cursor.execute("SELECT total_questions FROM progress_topics WHERE topic_id = ?", (topic_id,))
+        total_questions = cursor.fetchone()[0]
+        
+        # Update student progress for this topic
+        cursor.execute("""
+            INSERT OR REPLACE INTO student_progress 
+            (student_id, topic_id, completed_questions, total_questions, is_completed)
+            VALUES (?, ?, ?, ?, ?)
+        """, (
+            student_id,
+            topic_id,
+            completed_count,
+            total_questions,
+            1 if completed_count >= total_questions else 0
+        ))
 
         db.commit()
-        print("Successfully updated progress")  # Debug print
-        return jsonify({'success': True})
+        print("Successfully updated progress")
+        return jsonify({
+            'success': True,
+            'completed_count': completed_count,
+            'total_questions': total_questions
+        })
 
     except Exception as e:
         print("Error in update_aptitude_progress:")
-        print(traceback.format_exc())  # This will print the full error traceback
+        print(traceback.format_exc())
         if db:
             db.rollback()
         return jsonify({'success': False, 'message': str(e)}), 500
@@ -576,6 +621,7 @@ def update_aptitude_progress():
     finally:
         if db:
             db.close()
+
 
 @app.route('/get_aptitude_progress')
 def get_aptitude_progress():
@@ -586,20 +632,48 @@ def get_aptitude_progress():
         db = get_db_connection()
         cursor = db.cursor()
         
+        # Get student ID from user_id
+        cursor.execute("SELECT id FROM students WHERE user_id = ?", (session['user_id'],))
+        result = cursor.fetchone()
+        if not result:
+            return jsonify({'success': False, 'message': 'Student not found'}), 404
+        
+        student_id = result[0]
+        
         cursor.execute("""
             SELECT problem_id, is_completed 
             FROM aptitude_progress 
             WHERE student_id = ?
-        """, (session['user_id'],))
+        """, (student_id,))
         
-        progress = {row['problem_id']: row['is_completed'] for row in cursor.fetchall()}
-        return jsonify({'success': True, 'progress': progress})
+        progress = {row[0]: bool(row[1]) for row in cursor.fetchall()}
+        
+        # Get overall aptitude progress
+        cursor.execute("""
+            SELECT SUM(completed_questions) as completed, SUM(total_questions) as total
+            FROM student_progress sp
+            JOIN progress_topics pt ON sp.topic_id = pt.topic_id
+            WHERE sp.student_id = ? AND pt.parent_topic = 'Aptitude'
+        """, (student_id,))
+        
+        overall = cursor.fetchone()
+        overall_progress = {
+            'completed': overall[0] or 0,
+            'total': overall[1] or 0
+        }
+        
+        return jsonify({
+            'success': True,
+            'progress': progress,
+            'overall_progress': overall_progress
+        })
         
     except Exception as e:
         print(f"Error fetching progress: {e}")
         return jsonify({'success': False, 'message': str(e)}), 500
     finally:
-        db.close()
+        if db:
+            db.close()
 
 @app.route('/user')
 def user():
@@ -641,6 +715,10 @@ def user():
 def aptitude():
     return render_template('apti/aptitude.html')
 
+@app.route('/aptitude_base')
+def aptitude_base():
+    return render_template('aptitude_base.html')
+
 @app.route('/communication')
 def communication():
     return render_template('communication/communication.html')
@@ -655,11 +733,120 @@ def interview():
 
 @app.route('/aptitude_quantative')
 def aptitude_quantative():
-    return render_template('apti/aptitude_quantative.html')
+    return render_template('apti/quantative/aptitude_quantative.html')
 
 @app.route('/aptitude_numbers')
 def aptitude_numbers():
     return render_template('apti/aptitude_numbers.html')
+
+@app.route('/aptitude/time-and-work')
+def time_and_work():
+    return render_template('apti/quantative/time_and_work.html')
+
+@app.route('/aptitude/speed-distance')
+def speed_distance():
+    return render_template('apti/quantative/speed_distance.html')
+
+@app.route('/aptitude/percentages')
+def percentages():
+    return render_template('apti/percentages.html')
+
+@app.route('/aptitude/profit-and-loss')
+def profit_and_loss():
+    return render_template('apti/quantative/profit_and_loss.html')
+
+@app.route('/aptitude/simple_and_compound_intrest')
+def simple_interest():
+    return render_template('apti/quantative/simple_and_compound_interest.html')
+
+# @app.route('/aptitude/compound-interest')
+# def compound_interest():
+#     return render_template('apti/compound_interest.html')
+
+@app.route('/aptitude/ratio-and-proportion')
+def ratio_and_proportion():
+    return render_template('apti/quantative/ratio_and_proportion.html')
+
+@app.route('/aptitude/averages')
+def averages():
+    return render_template('apti/averages.html')
+
+@app.route('/aptitude/mixtures-and-alligations')
+def mixtures_and_alligations():
+    return render_template('apti/mixtures_and_alligations.html')
+
+@app.route('/aptitude/probability')
+def probability():
+    return render_template('apti/quantative/probability.html')
+
+@app.route('/logical-reasoning')
+def logical_reasoning():
+    return render_template('apti/logical_reasoning/logical_reasoning.html')
+
+@app.route('/blood_relations')
+def blood_relations():
+    # Your code to render the blood relations template
+    return render_template('apti/logical_reasoning/blood_relations.html')
+
+@app.route('/syllogism')
+def syllogism():
+    return render_template('apti/logical_reasoning/syllogism.html')
+
+@app.route('/directions')
+def directions():
+    return render_template('apti/logical_reasoning/directions.html')
+
+@app.route('/puzzles')
+def puzzles():
+    return render_template('apti/logical_reasoning/puzzles.html')
+
+@app.route('/sentence_completion')
+def sentence_completion():
+    return render_template('apti/verbal/sentence_completion.html')
+
+@app.route('/synonyms_and_atonyms')
+def synonyms_and_atonyms():
+    return render_template('apti/verbal/synonyms_and_atonyms.html')
+
+@app.route('/reading_and_comprehension')
+def reading_and_comprehension():
+    return render_template('apti/verbal/reading_and_comprehension.html')
+
+@app.route('/parajumbles')
+def parajumbles():
+    return render_template('apti/verbal/parajumbles.html')
+
+@app.route('/bar_graphs')
+def bar_graphs():
+    return render_template('apti/data_interpretation/bar_graphs.html')
+
+@app.route('/piecharts')
+def piecharts():
+    return render_template('apti/data_interpretation/piecharts.html')
+
+@app.route('/linegraphs')
+def linegraphs():
+    return render_template('apti/data_interpretation/linegraphs.html')
+
+@app.route('/tabulation')
+def tabulation():
+    return render_template('apti/data_interpretation/tabulation.html')
+
+@app.route('/verbal-reasoning')
+def verbal_reasoning():
+    return render_template('apti/verbal/verbal_reasoning.html')
+
+@app.route('/aptitude/problems-on-trains')
+def problems_on_trains():
+    return render_template('apti/quantative/problems_on_trains.html')
+
+@app.route('/aptitude/time_and_distance')
+def time_and_distance():
+    return render_template('apti/quantative/time_and_distance.html')
+
+@app.route('/data-interpretation')
+def data_interpretation():
+    return render_template('apti/data_interpretation/data_interpretation.html')
 
 @app.route('/communication_basics')
 def communication_basics():
@@ -717,6 +904,60 @@ def dsa_bit_manipulation():
 def notifications():
     return render_template('base/notifications.html')
 
+@app.route('/mark_complete', methods=['POST'])
+def mark_complete():
+    data = request.json
+    user_id = data.get('user_id')
+    topic_id = data.get('topic_id')
+    problem_id = data.get('problem_id')
+
+    if not all([user_id, topic_id, problem_id]):
+        return jsonify({"status": "error", "message": "Invalid data"}), 400
+
+    retries = 5
+    while retries > 0:
+        try:
+            db = get_db_connection()
+            cursor = db.cursor()
+
+            # Check if the progress already exists
+            cursor.execute("""
+                SELECT * FROM aptitude_progress 
+                WHERE user_id = ? AND topic_id = ? AND problem_id = ?
+            """, (user_id, topic_id, problem_id))
+            progress = cursor.fetchone()
+
+            if progress:
+                # Update the existing progress
+                cursor.execute("""
+                    UPDATE aptitude_progress 
+                    SET status = ?, updated_at = ? 
+                    WHERE user_id = ? AND topic_id = ? AND problem_id = ?
+                """, ('completed', datetime.now(timezone.utc), user_id, topic_id, problem_id))
+            else:
+                # Insert new progress
+                cursor.execute("""
+                    INSERT INTO aptitude_progress (user_id, topic_id, problem_id, status, updated_at) 
+                    VALUES (?, ?, ?, ?, ?)
+                """, (user_id, topic_id, problem_id, 'completed', datetime.now(timezone.utc)))
+
+            db.commit()
+            return jsonify({"status": "success"})
+        except sqlite3.OperationalError as e:
+            if "database is locked" in str(e):
+                retries -= 1
+                time.sleep(1)  # Wait for 1 second before retrying
+            else:
+                print(f"Error updating progress: {e}")
+                return jsonify({"status": "error", "message": str(e)}), 500
+        except Exception as e:
+            print(f"Unexpected error: {e}")
+            return jsonify({"status": "error", "message": str(e)}), 500
+        finally:
+            if db:
+                db.close()
+
+    return jsonify({"status": "error", "message": "Failed to update progress after multiple retries"}), 500
+
 if __name__ == '__main__':
     app.run(debug=True)
-#if this works out i'll ask you to do the same to apti

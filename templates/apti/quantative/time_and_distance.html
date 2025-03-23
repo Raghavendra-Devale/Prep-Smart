@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block page_title %}Time and Distance{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="card">
+        <div class="header">
+            <h4 class="title">Time and Distance</h4>
+            <p class="category">Master time and distance problems</p>
+        </div>
+        <div class="content table-responsive table-full-width">
+            <table class="table table-hover table-striped">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Question</th>
+                        <th>Type</th>
+                        <th>Difficulty Level</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for i in range(1, 51) %}
+                    <tr>
+                        <td>{{ i }}</td>
+                        <td>Sample time and distance question {{ i }}</td>
+                        <td>Time and Distance</td>
+                        <td>Medium</td>
+                        <td>
+                            <a href="#" class="btn btn-success btn-sm" onclick="showExplanation({{ i }})">Answer</a>
+                            <div id="explanation-{{ i }}" class="explanation-box mt-2" style="display: none;">
+                                <strong>Explanation:</strong> Explanation text will be here.
+                            </div>
+                            <br />
+                            <button class="btn btn-primary btn-sm" onclick="markComplete({{ i }})" id="complete-{{ i }}">Mark as Complete</button>
+                            <span id="status-{{ i }}" style="display:none;" class="ml-2 text-success">Completed</span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+function showExplanation(id) {
+    let explanationBox = document.getElementById("explanation-" + id);
+    explanationBox.style.display = "block";
+    setTimeout(function() {
+        explanationBox.style.display = "none";
+    }, 5000); // Hide after 5 seconds
+}
+
+function markComplete(id) {
+    let completeButton = document.getElementById("complete-" + id);
+    let statusText = document.getElementById("status-" + id);
+
+    // Replace with actual user_id and topic_id
+    const user_id = {{ session['user_id'] }};
+    const topic_id = 12; // Update topic_id for parajumbles
+
+    // Make an AJAX call to update the database
+    fetch('/mark_complete', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ user_id: user_id, topic_id: topic_id, problem_id: id })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            completeButton.style.display = "none";  // Hide the "Mark as Complete" button
+            statusText.style.display = "inline";   // Show the "Completed" status
+        } else {
+            alert('Failed to mark as complete');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to mark as complete');
+    });
+}
+</script>
+
+{% endblock %}

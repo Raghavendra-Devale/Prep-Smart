@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block page_title %}Reading and Comprehension{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="card">
+        <div class="header">
+            <h4 class="title">Reading and Comprehension</h4>
+            <p class="category">Master reading and comprehension problems</p>
+        </div>
+        <div class="content table-responsive table-full-width">
+            <table class="table table-hover table-striped">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Question</th>
+                        <th>Type</th>
+                        <th>Difficulty Level</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for i in range(1, 51) %}
+                    <tr>
+                        <td>{{ i }}</td>
+                        <td class="question-cell">
+                            {% if i == 1 %}
+                            Read the passage and answer the question: "Tom and Jerry are best friends who play together every day. One day, Tom lost his toy and Jerry helped him find it. How did Jerry help Tom?"
+                            {% elif i == 2 %}
+                            "Alice went to the market and bought apples, bananas, and oranges. What did Alice buy?"
+                            {% elif i == 3 %}
+                            "The sun sets in the west, and rises in the east. Where does the sun rise?"
+                            {% else %}
+                            {% if i % 3 == 0 %}
+                            "A bird can fly, but a fish swims in water. What can swim in the water?"
+                            {% elif i % 2 == 0 %}
+                            "She is reading a book under a tree. What is she doing?"
+                            {% else %}
+                            "My brother is a doctor. What is my brother's profession?"
+                            {% endif %}
+                            {% endif %}
+                        </td>
+                        <td>Reading and Comprehension</td>
+                        <td>
+                            {% if i <= 10 %}
+                            Easy
+                            {% elif i <= 30 %}
+                            Medium
+                            {% else %}
+                            Hard
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="#" class="btn btn-success btn-sm" onclick="showExplanation({{ i }})">Answer</a>
+                            <div id="explanation-{{ i }}" class="explanation-box mt-2" style="display: none;">
+                                <strong>Explanation:</strong>
+                                {% if i == 1 %}
+                                Jerry helped Tom by finding his toy.
+                                {% elif i == 2 %}
+                                Alice bought apples, bananas, and oranges.
+                                {% elif i == 3 %}
+                                The sun rises in the east.
+                                {% elif i % 3 == 0 %}
+                                A fish can swim in water.
+                                {% elif i % 2 == 0 %}
+                                She is reading a book under a tree.
+                                {% else %}
+                                The brother's profession is a doctor.
+                                {% endif %}
+                            </div>
+                            <br />
+                            <button class="btn btn-primary btn-sm" onclick="markComplete({{ i }})" id="complete-{{ i }}">Mark as Complete</button>
+                            <span id="status-{{ i }}" style="display:none;" class="ml-2 text-success">Completed</span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+.question-cell {
+    height: 100px; /* Adjust the height as needed */
+    vertical-align: middle;
+}
+</style>
+
+<script>
+const user_id = {{ session['user_id'] }};
+const topic_id = 23; // Update topic_id for reading and comprehension
+
+function showExplanation(id) {
+    let explanationBox = document.getElementById("explanation-" + id);
+    explanationBox.style.display = "block";
+    setTimeout(function() {
+        explanationBox.style.display = "none";
+    }, 5000); // Hide after 5 seconds
+}
+
+function markComplete(id) {
+    let completeButton = document.getElementById("complete-" + id);
+    let statusText = document.getElementById("status-" + id);
+
+    fetch('/mark_complete', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ user_id: user_id, topic_id: topic_id, problem_id: id })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            completeButton.style.display = "none";  
+            statusText.style.display = "inline";   
+        } else {
+            alert('Failed to mark as complete');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to mark as complete');
+    });
+}
+</script>
+
+{% endblock %}

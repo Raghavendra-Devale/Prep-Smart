@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block page_title %}Parajumbles{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="card">
+        <div class="header">
+            <h4 class="title">Parajumbles</h4>
+            <p class="category">Master parajumbles problems</p>
+        </div>
+        <div class="content table-responsive table-full-width">
+            <table class="table table-hover table-striped">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Question</th>
+                        <th>Type</th>
+                        <th>Difficulty Level</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for i in range(1, 51) %}
+                    <tr>
+                        <td>{{ i }}</td>
+                        <td class="question-cell">
+                            {% if i == 1 %}
+                            Rearrange the following sentences to form a meaningful paragraph:  
+                            "1. The first step to achieving success is setting clear goals.  
+                             2. Without a clear direction, it’s easy to become distracted and lose focus.  
+                             3. These goals will serve as a roadmap to keep you on track.  
+                             4. Achieving success requires dedication and perseverance."  
+                            {% elif i == 2 %}
+                            Rearrange the following sentences to form a meaningful paragraph:  
+                            "1. Learning new skills is essential for personal growth.  
+                             2. Once you acquire new skills, your confidence increases.  
+                             3. This gives you the opportunity to tackle more complex tasks.  
+                             4. New skills help in opening new doors of opportunity."  
+                            {% elif i == 3 %}
+                            Rearrange the following sentences to form a meaningful paragraph:  
+                            "1. Reading is a powerful tool for acquiring knowledge.  
+                             2. It helps improve your vocabulary and comprehension.  
+                             3. Books provide an easy access to a variety of information.  
+                             4. Therefore, it is important to develop the habit of reading regularly."
+                            {% else %}
+                            {% if i % 3 == 0 %}
+                            Rearrange the following sentences to form a meaningful paragraph:  
+                            "1. The internet has revolutionized communication.  
+                             2. It allows instant connection across the globe.  
+                             3. Social media has become a powerful tool in everyday life.  
+                             4. People use it to stay connected with friends and family."
+                            {% elif i % 2 == 0 %}
+                            Rearrange the following sentences to form a meaningful paragraph:  
+                            "1. Exercising regularly has numerous benefits.  
+                             2. It helps in reducing stress and improving overall health.  
+                             3. It is important to find an exercise routine that suits you.  
+                             4. Healthy habits lead to a long and fulfilling life."
+                            {% else %}
+                            Rearrange the following sentences to form a meaningful paragraph:  
+                            "1. The weather is a key factor in determining the outcome of a sporting event.  
+                             2. Extreme conditions can lead to the cancellation of the event.  
+                             3. The players and fans both have to deal with the heat, cold, or rain.  
+                             4. Meteorologists closely monitor the weather conditions before and during events."
+                            {% endif %}
+                            {% endif %}
+                        </td>
+                        <td>Parajumbles</td>
+                        <td>
+                            {% if i <= 10 %}
+                            Easy
+                            {% elif i <= 30 %}
+                            Medium
+                            {% else %}
+                            Hard
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="#" class="btn btn-success btn-sm" onclick="showExplanation({{ i }})">Answer</a>
+                            <div id="explanation-{{ i }}" class="explanation-box mt-2" style="display: none;">
+                                <strong>Explanation:</strong>
+                                {% if i == 1 %}
+                                The correct order is: 1, 2, 3, 4.
+                                {% elif i == 2 %}
+                                The correct order is: 1, 4, 2, 3.
+                                {% elif i == 3 %}
+                                The correct order is: 1, 2, 3, 4.
+                                {% elif i % 3 == 0 %}
+                                The correct order is: 1, 2, 4, 3.
+                                {% elif i % 2 == 0 %}
+                                The correct order is: 1, 4, 2, 3.
+                                {% else %}
+                                The correct order is: 1, 4, 2, 3.
+                                {% endif %}
+                            </div>
+                            <br />
+                            <button class="btn btn-primary btn-sm" onclick="markComplete({{ i }})" id="complete-{{ i }}">Mark as Complete</button>
+                            <span id="status-{{ i }}" style="display:none;" class="ml-2 text-success">Completed</span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+.question-cell {
+    height: 100px; /* Adjust the height as needed */
+    vertical-align: middle;
+}
+</style>
+
+<script>
+const user_id = {{ session['user_id'] }};
+const topic_id = 24; // Update topic_id for parajumbles
+
+function showExplanation(id) {
+    let explanationBox = document.getElementById("explanation-" + id);
+    explanationBox.style.display = "block";
+    setTimeout(function() {
+        explanationBox.style.display = "none";
+    }, 5000); // Hide after 5 seconds
+}
+
+function markComplete(id) {
+    let completeButton = document.getElementById("complete-" + id);
+    let statusText = document.getElementById("status-" + id);
+
+    fetch('/mark_complete', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ user_id: user_id, topic_id: topic_id, problem_id: id })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            completeButton.style.display = "none";  
+            statusText.style.display = "inline";   
+        } else {
+            alert('Failed to mark as complete');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to mark as complete');
+    });
+}
+</script>
+
+{% endblock %}

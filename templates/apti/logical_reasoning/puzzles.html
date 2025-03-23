@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block page_title %}Puzzles{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="card">
+        <div class="header">
+            <h4 class="title">Puzzles</h4>
+            <p class="category">Master puzzle problems</p>
+        </div>
+        <div class="content table-responsive table-full-width">
+            <table class="table table-hover table-striped">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Question</th>
+                        <th>Type</th>
+                        <th>Difficulty Level</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for i in range(1, 51) %}
+                    <tr>
+                        <td>{{ i }}</td>
+                        <td class="question-cell">
+                            {% if i == 1 %}
+                            You have two ropes, each of which burns for exactly one hour. However, the ropes do not burn at a uniform rate. How do you measure exactly 45 minutes?
+                            {% elif i == 2 %}
+                            A man is pushing his car along a road when he comes to a hotel. He shouts, "I'm bankrupt!" Why?
+                            {% elif i == 3 %}
+                            You are given 9 identical-looking coins. One of them is counterfeit and weighs slightly less than the others. How do you find the counterfeit coin in just two weighings?
+                            {% else %}
+                            {% if i % 3 == 0 %}
+                            A father is 45 years old, and his son is 15. In how many years will the father be exactly three times as old as the son?
+                            {% elif i % 2 == 0 %}
+                            You have a 3-liter jug and a 5-liter jug. How do you measure exactly 4 liters of water?
+                            {% else %}
+                            There are 3 houses in a straight line, and each house is painted a different color. The owner of the red house is a doctor, the owner of the blue house is a teacher, and the owner of the green house is a musician. What color is the house of the carpenter?
+                            {% endif %}
+                            {% endif %}
+                        </td>
+                        <td>Puzzles</td>
+                        <td>
+                            {% if i <= 10 %}
+                            Easy
+                            {% elif i <= 30 %}
+                            Medium
+                            {% else %}
+                            Hard
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="#" class="btn btn-success btn-sm" onclick="showExplanation({{ i }})">Answer</a>
+                            <div id="explanation-{{ i }}" class="explanation-box mt-2" style="display: none;">
+                                <strong>Explanation:</strong>
+                                {% if i == 1 %}
+                                Light both ropes at both ends. One will burn completely in 30 minutes, and the other will burn for 45 minutes.
+                                {% elif i == 2 %}
+                                He is playing Monopoly, and he landed on a hotel that costs too much.
+                                {% elif i == 3 %}
+                                Use a balance scale to compare the coins, eliminate the majority, and repeat with two coins left.
+                                {% elif i % 3 == 0 %}
+                                In 15 years, the father will be 60, and the son will be 20 (3 times the age).
+                                {% elif i % 2 == 0 %}
+                                Fill the 5-liter jug and pour into the 3-liter jug until full. You’ll be left with 2 liters. Pour it out, and then fill the 5-liter jug again. The remaining 1 liter in the 5-liter jug will give you the exact 4 liters.
+                                {% else %}
+                                The carpenter's house is the yellow one (the question is a trick!).
+                                {% endif %}
+                            </div>
+                            <br />
+                            <button class="btn btn-primary btn-sm" onclick="markComplete({{ i }})" id="complete-{{ i }}">Mark as Complete</button>
+                            <span id="status-{{ i }}" style="display:none;" class="ml-2 text-success">Completed</span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+.question-cell {
+    height: 100px; /* Adjust the height as needed */
+    vertical-align: middle;
+}
+</style>
+
+<script>
+const user_id = {{ session['user_id'] }};
+const topic_id = 20; // Update topic_id for puzzles
+
+function showExplanation(id) {
+    let explanationBox = document.getElementById("explanation-" + id);
+    explanationBox.style.display = "block";
+    setTimeout(function() {
+        explanationBox.style.display = "none";
+    }, 5000); // Hide after 5 seconds
+}
+
+function markComplete(id) {
+    let completeButton = document.getElementById("complete-" + id);
+    let statusText = document.getElementById("status-" + id);
+
+    fetch('/mark_complete', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ user_id: user_id, topic_id: topic_id, problem_id: id })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            completeButton.style.display = "none";  
+            statusText.style.display = "inline";   
+        } else {
+            alert('Failed to mark as complete');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to mark as complete');
+    });
+}
+</script>
+
+{% endblock %}

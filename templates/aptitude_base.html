@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='assets/img/favicon.ico') }}">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+
+    <title>Aptitude Dashboard - Prep_Smart</title>
+
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+
+    <!-- Bootstrap core CSS -->
+    <link href="{{ url_for('static', filename='assets/css/bootstrap.min.css') }}" rel="stylesheet">
+
+    <!-- Animation library for notifications -->
+    <link href="{{ url_for('static', filename='assets/css/animate.min.css') }}" rel="stylesheet">
+
+    <!-- Light Bootstrap Table core CSS -->
+    <link href="{{ url_for('static', filename='assets/css/light-bootstrap-dashboard.css') }}" rel="stylesheet">
+
+    <!-- Fonts and icons -->
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Roboto:400,700,300" rel="stylesheet">
+    <link href="{{ url_for('static', filename='assets/css/pe-icon-7-stroke.css') }}" rel="stylesheet">
+</head>
+<body>
+
+<div class="wrapper">
+    <!-- Sidebar -->
+    <div class="sidebar" data-color="purple" data-image="{{ url_for('static', filename='assets/img/sidebar-5.jpg') }}">
+        <div class="sidebar-wrapper">
+            <div class="logo">
+                <a href="#" class="simple-text">Prep_Smart</a>
+            </div>
+            <ul class="nav">
+                <li>
+                    <a href="{{ url_for('dashboard') }}">
+                        <i class="pe-7s-graph"></i>
+                        <p>Dashboard</p>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('user') }}">
+                        <i class="pe-7s-user"></i>
+                        <p>User Profile</p>
+                    </a>
+                </li>
+                <li class="active">
+                    <a href="{{ url_for('aptitude') }}">
+                        <i class="pe-7s-note2"></i>
+                        <p>Aptitude Preparation</p>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('dsa') }}">
+                        <i class="pe-7s-science"></i>
+                        <p>DSA</p>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('interview') }}">
+                        <i class="pe-7s-map-marker"></i>
+                        <p>Interview Preparation</p>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('notifications') }}">
+                        <i class="pe-7s-bell"></i>
+                        <p>Notifications</p>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Main Panel -->
+    <div class="main-panel">
+        <nav class="navbar navbar-default navbar-fixed">
+            <div class="container-fluid">
+                <div class="navbar-header">
+                    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navigation-example-2">
+                        <span class="sr-only">Toggle navigation</span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                    <a class="navbar-brand" href="#">Aptitude</a>
+                </div>
+            </div>
+        </nav>
+
+        <div class="content">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="header">
+                                <h4 class="title">{% block topic_title %}{% endblock %}</h4>
+                                <p class="category">Sharpen your aptitude skills</p>
+                            </div>
+                            <div class="content table-responsive table-full-width">
+                                <table class="table table-hover table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Topic</th>
+                                            <th>Description</th>
+                                            <th>Questions</th>
+                                            <th>Difficulty</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% block problems %}{% endblock %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="container-fluid">
+                <nav class="pull-left">
+                    <ul>
+                        <li><a href="#">Home</a></li>
+                        <li><a href="#">About</a></li>
+                        <li><a href="#">Blog</a></li>
+                    </ul>
+                </nav>
+                <p class="copyright pull-right">
+                    &copy; <script>document.write(new Date().getFullYear())</script> <a href="#">Prep_Smart</a>
+                </p>
+            </div>
+        </footer>
+    </div>
+</div>
+
+<!-- Core JS Files -->
+<script src="{{ url_for('static', filename='assets/js/jquery.3.2.1.min.js') }}"></script>
+<script src="{{ url_for('static', filename='assets/js/bootstrap.min.js') }}"></script>
+</body>
+</html>

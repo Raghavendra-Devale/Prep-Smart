@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block page_title %}Quantitative Aptitude{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+    <div class="card">
+        <div class="header">
+            <h4 class="title">Quantitative Aptitude</h4>
+            <p class="category">Sharpen your numerical and mathematical skills</p>
+        </div>
+        <div class="content table-responsive table-full-width">
+            <table class="table table-hover table-striped">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Topic</th>
+                        <th>Description</th>
+                        <th>Questions</th>
+                        <th>Difficulty Level</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1</td>
+                        <td>Problems on Trains</td>
+                        <td>Master distance, speed, and time-based questions</td>
+                        <td>40+</td>
+                        <td>Easy</td>                
+                        <td><a href="{{ url_for('problems_on_trains') }}" class="btn btn-success btn-sm">Practice</a></td>
+                    </tr>
+                    <tr>
+                        <td>2</td>
+                        <td>Time and Distance</td>
+                        <td>Learn to solve time, speed, and distance problems</td>
+                        <td>35+</td>
+                        <td>Medium</td>
+                        <td><a href="{{ url_for('time_and_distance') }}" class="btn btn-success btn-sm">Practice</a></td>
+                    </tr>
+                    <tr>
+                        <td>3</td>
+                        <td>Profit and Loss</td>
+                        <td>Calculate profit, loss, and percentages</td>
+                        <td>45+</td>
+                        <td>Easy</td>
+                        <td><a href="{{ url_for('profit_and_loss') }}" class="btn btn-success btn-sm">Practice</a></td>
+                    </tr>
+                    <tr>
+                        <td>4</td>
+                        <td>Simple and Compound Interest</td>
+                        <td>Master interest calculation techniques</td>
+                        <td>30+</td>
+                        <td>Medium</td>
+                        <td><a href="{{ url_for('simple_interest') }}" class="btn btn-success btn-sm">Practice</a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>5</td>
+                        <td>Ratio and Proportion</td>
+                        <td>Master ratio simplification and comparison techniques</td>
+                        <td>50+</td>
+                        <td>Medium</td>
+                        <td><a href="{{ url_for('ratio_and_proportion') }}" class="btn btn-success btn-sm">Practice</a></td>
+                    </tr>
+                    <tr>
+                        <td>6</td>
+                        <td>Probability</td>
+                        <td>Master probability and event-based questions</td>
+                        <td>40+</td>
+                        <td>Medium</td>
+                        <td><a href="{{ url_for('probability') }}" class="btn btn-success btn-sm">Practice</a></td>
+                    </tr>
+                </tbody>
+                
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

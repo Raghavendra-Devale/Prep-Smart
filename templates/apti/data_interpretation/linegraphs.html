@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block page_title %}Line Graphs{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="card">
+        <div class="header">
+            <h4 class="title">Line Graphs</h4>
+            <p class="category">Master line graph problems</p>
+        </div>
+        <div class="content table-responsive table-full-width">
+            <table class="table table-hover table-striped">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Question</th>
+                        <th>Type</th>
+                        <th>Difficulty Level</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for i in range(1, 51) %}
+                    <tr>
+                        <td>{{ i }}</td>
+                        <td>
+                            {% if i == 1 %}
+                            The line graph below shows the temperature changes over a week. What was the temperature on the 3rd day?
+                            <br />
+                            (Image of line graph here)
+                            {% elif i == 2 %}
+                            The line graph shows the number of visitors to a website each month. What is the total number of visitors over the first three months?
+                            <br />
+                            (Image of line graph here)
+                            {% elif i == 3 %}
+                            A line graph represents the monthly sales of a company for one year. What was the percentage increase in sales from the 4th to the 8th month?
+                            <br />
+                            (Image of line graph here)
+                            {% else %}
+                            {% if i % 3 == 0 %}
+                            The line graph shows the population growth of a city over ten years. What was the population at year 5?
+                            <br />
+                            (Image of line graph here)
+                            {% elif i % 2 == 0 %}
+                            A line graph tracks the stock price of a company over six months. What was the lowest price during the 6-month period?
+                            <br />
+                            (Image of line graph here)
+                            {% else %}
+                            The line graph shows the number of books sold by an author over the last year. In which month were the highest sales recorded?
+                            <br />
+                            (Image of line graph here)
+                            {% endif %}
+                            {% endif %}
+                        </td>
+                        <td>Line Graphs</td>
+                        <td>Medium</td>
+                        <td>
+                            <a href="#" class="btn btn-success btn-sm" onclick="showExplanation({{ i }})">Answer</a>
+                            <div id="explanation-{{ i }}" class="explanation-box mt-2" style="display: none;">
+                                <strong>Explanation:</strong>
+                                {% if i == 1 %}
+                                The temperature on the 3rd day was 25°C, as seen from the line graph at the corresponding point for day 3.
+                                {% elif i == 2 %}
+                                The total number of visitors over the first three months is the sum of the values shown on the graph for each of the first three months.
+                                {% elif i == 3 %}
+                                The sales increased by 30% from the 4th to the 8th month, calculated by comparing the sales values at those points on the graph.
+                                {% elif i % 3 == 0 %}
+                                The population at year 5 was 500,000, as indicated by the value on the line graph at year 5.
+                                {% elif i % 2 == 0 %}
+                                The lowest stock price during the 6-month period was $20, as represented by the lowest point on the line graph.
+                                {% else %}
+                                The highest sales were recorded in month 7, based on the peak value on the graph for the 7th month.
+                                {% endif %}
+                            </div>
+                            <br />
+                            <button class="btn btn-primary btn-sm" onclick="markComplete({{ i }})" id="complete-{{ i }}">Mark as Complete</button>
+                            <span id="status-{{ i }}" style="display:none;" class="ml-2 text-success">Completed</span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+function showExplanation(id) {
+    let explanationBox = document.getElementById("explanation-" + id);
+    explanationBox.style.display = "block";
+    setTimeout(function() {
+        explanationBox.style.display = "none";
+    }, 5000); // Hide after 5 seconds
+}
+
+function markComplete(id) {
+    let completeButton = document.getElementById("complete-" + id);
+    let statusText = document.getElementById("status-" + id);
+
+    // Replace with actual user_id and topic_id
+    const user_id = {{ session['user_id'] }};
+    const topic_id = 27; // Update topic_id for Line Graphs
+
+    // Make an AJAX call to update the database
+    fetch('/mark_complete', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ user_id: user_id, topic_id: topic_id, problem_id: id })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            completeButton.style.display = "none";  // Hide the "Mark as Complete" button
+            statusText.style.display = "inline";   // Show the "Completed" status
+        } else {
+            alert('Failed to mark as complete');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to mark as complete');
+    });
+}
+</script>
+
+{% endblock %}

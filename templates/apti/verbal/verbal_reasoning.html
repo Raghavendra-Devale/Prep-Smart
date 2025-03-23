@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block page_title %}Verbal Reasoning{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="card">
+        <div class="header">
+            <h4 class="title">Verbal Reasoning</h4>
+            <p class="category">Enhance your understanding of language and verbal skills</p>
+        </div>
+        <div class="content table-responsive table-full-width">
+            <table class="table table-hover table-striped">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Topic</th>
+                        <th>Description</th>
+                        <th>Questions</th>
+                        <th>Difficulty Level</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1</td>
+                        <td>Sentence Completion</td>
+                        <td>Complete sentences using appropriate grammar and logic</td>
+                        <td>30+</td>
+                        <td>Easy</td>
+                        <td><a href="{{ url_for('sentence_completion') }}" class="btn btn-success btn-sm">Practice</a></td>
+                    </tr>
+                    <tr>
+                        <td>2</td>
+                        <td>Synonyms & Antonyms</td>
+                        <td>Identify words with similar or opposite meanings</td>
+                        <td>25+</td>
+                        <td>Easy</td>
+                        <td><a href="{{ url_for('synonyms_and_atonyms') }}" class="btn btn-success btn-sm">Practice</a></td>
+                    </tr>
+                    <tr>
+                        <td>3</td>
+                        <td>Reading Comprehension</td>
+                        <td>Analyze and understand written passages</td>
+                        <td>40+</td>
+                        <td>Medium</td>
+                        <td><a href="{{ url_for('reading_and_comprehension')}}" class="btn btn-success btn-sm">Practice</a></td>
+                    </tr>
+                    <tr>
+                        <td>4</td>
+                        <td>Parajumbles</td>
+                        <td>Rearrange sentences to form meaningful paragraphs</td>
+                        <td>20+</td>
+                        <td>Hard</td>
+                        <td><a href="{{url_for('parajumbles')}}" class="btn btn-success btn-sm">Practice</a></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

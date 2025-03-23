@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block page_title %}Syllogism{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="card">
+        <div class="header">
+            <h4 class="title">Syllogism</h4>
+            <p class="category">Master syllogism problems</p>
+        </div>
+        <div class="content table-responsive table-full-width">
+            <table class="table table-hover table-striped">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Question</th>
+                        <th>Type</th>
+                        <th>Difficulty Level</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for i in range(1, 51) %}
+                    <tr>
+                        <td>{{ i }}</td>
+                        <td class="question-cell">
+                            {% if i == 1 %}
+                            All roses are flowers. Some flowers are red. Therefore, some roses are red. Is the conclusion valid?
+                            {% elif i == 2 %}
+                            All cats are animals. Some animals are pets. Therefore, some cats are pets. Is the conclusion valid?
+                            {% elif i == 3 %}
+                            All men are mortal. Socrates is a man. Therefore, Socrates is mortal. Is the conclusion valid?
+                            {% else %}
+                            {% if i % 3 == 0 %}
+                            No birds are mammals. Some mammals are wild animals. Therefore, some wild animals are not birds. Is the conclusion valid?
+                            {% elif i % 2 == 0 %}
+                            Some dogs are friendly. All friendly animals are good pets. Therefore, some dogs are good pets. Is the conclusion valid?
+                            {% else %}
+                            All fruits are healthy. Some fruits are sweet. Therefore, some healthy things are sweet. Is the conclusion valid?
+                            {% endif %}
+                            {% endif %}
+                        </td>
+                        <td>Syllogism</td>
+                        <td>
+                            {% if i <= 10 %}
+                            Easy
+                            {% elif i <= 30 %}
+                            Medium
+                            {% else %}
+                            Hard
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="#" class="btn btn-success btn-sm" onclick="showExplanation({{ i }})">Answer</a>
+                            <div id="explanation-{{ i }}" class="explanation-box mt-2" style="display: none;">
+                                <strong>Explanation:</strong>
+                                {% if i == 1 %}
+                                The conclusion is not valid, as some flowers being red does not necessarily mean that some roses are red.
+                                {% elif i == 2 %}
+                                The conclusion is not valid, as just because some animals are pets, it doesn't mean all cats are pets.
+                                {% elif i == 3 %}
+                                The conclusion is valid, as it follows from the premises.
+                                {% elif i % 3 == 0 %}
+                                The conclusion is valid, as no birds are mammals, and wild animals are not birds.
+                                {% elif i % 2 == 0 %}
+                                The conclusion is valid, as some dogs are indeed good pets.
+                                {% else %}
+                                The conclusion is not valid, as the statement does not necessarily follow that healthy things are sweet.
+                                {% endif %}
+                            </div>
+                            <br />
+                            <button class="btn btn-primary btn-sm" onclick="markComplete({{ i }})" id="complete-{{ i }}">Mark as Complete</button>
+                            <span id="status-{{ i }}" style="display:none;" class="ml-2 text-success">Completed</span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+.question-cell {
+    height: 100px; /* Adjust the height as needed */
+    vertical-align: middle;
+}
+</style>
+
+<script>
+const user_id = {{ session['user_id'] }};
+const topic_id = 18; // Update topic_id for syllogism
+
+function showExplanation(id) {
+    let explanationBox = document.getElementById("explanation-" + id);
+    explanationBox.style.display = "block";
+    setTimeout(function() {
+        explanationBox.style.display = "none";
+    }, 5000); // Hide after 5 seconds
+}
+
+function markComplete(id) {
+    let completeButton = document.getElementById("complete-" + id);
+    let statusText = document.getElementById("status-" + id);
+
+    fetch('/mark_complete', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ user_id: user_id, topic_id: topic_id, problem_id: id })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            completeButton.style.display = "none";  
+            statusText.style.display = "inline";   
+        } else {
+            alert('Failed to mark as complete');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to mark as complete');
+    });
+}
+</script>
+
+{% endblock %}

@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block page_title %}Pie Charts{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="card">
+        <div class="header">
+            <h4 class="title">Pie Charts</h4>
+            <p class="category">Master pie charts problems</p>
+        </div>
+        <div class="content table-responsive table-full-width">
+            <table class="table table-hover table-striped">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Question</th>
+                        <th>Type</th>
+                        <th>Difficulty Level</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for i in range(1, 51) %}
+                    <tr>
+                        <td>{{ i }}</td>
+                        <td>
+                            {% if i == 1 %}
+                            The pie chart below shows the distribution of votes among five candidates in an election. What percentage of votes did Candidate A receive?
+                            <br />
+                            (Image of pie chart here)
+                            {% elif i == 2 %}
+                            The pie chart shows the expenses of a company in different sectors for a year. What was the percentage spent on marketing?
+                            <br />
+                            (Image of pie chart here)
+                            {% elif i == 3 %}
+                            A pie chart displays the sales revenue distribution across four regions. Which region contributed the highest sales?
+                            <br />
+                            (Image of pie chart here)
+                            {% else %}
+                            {% if i % 3 == 0 %}
+                            The pie chart shows the distribution of time spent by students on various activities. What fraction of time was spent on study-related activities?
+                            <br />
+                            (Image of pie chart here)
+                            {% elif i % 2 == 0 %}
+                            A pie chart illustrates the proportion of monthly income spent on rent, food, and savings. What percentage was spent on rent?
+                            <br />
+                            (Image of pie chart here)
+                            {% else %}
+                            The pie chart displays the market share of five mobile phone brands. Which brand had the second-highest market share?
+                            <br />
+                            (Image of pie chart here)
+                            {% endif %}
+                            {% endif %}
+                        </td>
+                        <td>Pie Charts</td>
+                        <td>Medium</td>
+                        <td>
+                            <a href="#" class="btn btn-success btn-sm" onclick="showExplanation({{ i }})">Answer</a>
+                            <div id="explanation-{{ i }}" class="explanation-box mt-2" style="display: none;">
+                                <strong>Explanation:</strong>
+                                {% if i == 1 %}
+                                Candidate A received 35% of the votes, as represented by the slice that covers 35% of the total pie chart.
+                                {% elif i == 2 %}
+                                The marketing expenditure was 20%, as shown by the slice for marketing in the pie chart.
+                                {% elif i == 3 %}
+                                The North region contributed the highest sales, as its slice occupies the largest portion of the pie chart.
+                                {% elif i % 3 == 0 %}
+                                The fraction of time spent on study-related activities is 2/5, as represented by the corresponding slice.
+                                {% elif i % 2 == 0 %}
+                                The percentage spent on rent is 30%, as shown by the slice for rent in the pie chart.
+                                {% else %}
+                                The brand with the second-highest market share is Brand B, as its slice represents the second-largest portion of the pie.
+                                {% endif %}
+                            </div>
+                            <br />
+                            <button class="btn btn-primary btn-sm" onclick="markComplete({{ i }})" id="complete-{{ i }}">Mark as Complete</button>
+                            <span id="status-{{ i }}" style="display:none;" class="ml-2 text-success">Completed</span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+function showExplanation(id) {
+    let explanationBox = document.getElementById("explanation-" + id);
+    explanationBox.style.display = "block";
+    setTimeout(function() {
+        explanationBox.style.display = "none";
+    }, 5000); // Hide after 5 seconds
+}
+
+function markComplete(id) {
+    let completeButton = document.getElementById("complete-" + id);
+    let statusText = document.getElementById("status-" + id);
+
+    // Replace with actual user_id and topic_id
+    const user_id = {{ session['user_id'] }};
+    const topic_id = 26; // Update topic_id for Pie Charts
+
+    // Make an AJAX call to update the database
+    fetch('/mark_complete', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ user_id: user_id, topic_id: topic_id, problem_id: id })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            completeButton.style.display = "none";  // Hide the "Mark as Complete" button
+            statusText.style.display = "inline";   // Show the "Completed" status
+        } else {
+            alert('Failed to mark as complete');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to mark as complete');
+    });
+}
+</script>
+
+{% endblock %}

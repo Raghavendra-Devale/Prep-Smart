@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block page_title %}Data Interpretation{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="card">
+        <div class="header">
+            <h4 class="title">Data Interpretation</h4>
+            <p class="category">Improve your ability to interpret and analyze data</p>
+        </div>
+        <div class="content table-responsive table-full-width">
+            <table class="table table-hover table-striped">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Topic</th>
+                        <th>Description</th>
+                        <th>Questions</th>
+                        <th>Difficulty Level</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1</td>
+                        <td>Bar Graphs</td>
+                        <td>Analyze data represented using bar graphs</td>
+                        <td>20+</td>
+                        <td>Easy</td>
+                        <td><a href="{{ url_for('bar_graphs')}}" class="btn btn-success btn-sm">Practice</a></td>
+                    </tr>
+                    <tr>
+                        <td>2</td>
+                        <td>Pie Charts</td>
+                        <td>Interpret and solve problems based on pie charts</td>
+                        <td>25+</td>
+                        <td>Medium</td>
+                        <td><a href="{{ url_for('piecharts')}}" class="btn btn-success btn-sm">Practice</a></td>
+                    </tr>
+                    <tr>
+                        <td>3</td>
+                        <td>Line Graphs</td>
+                        <td>Understand trends and patterns from line graphs</td>
+                        <td>30+</td>
+                        <td>Medium</td>
+                        <td><a href="{{ url_for('linegraphs')}}" class="btn btn-success btn-sm">Practice</a></td>
+                    </tr>
+                    <tr>
+                        <td>4</td>
+                        <td>Tabulation</td>
+                        <td>Interpret tabulated data to solve problems</td>
+                        <td>15+</td>
+                        <td>Hard</td>
+                        <td><a href="{{url_for('tabulation')}}" class="btn btn-success btn-sm">Practice</a></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+
+{% block page_title %}Problems on Trains{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="card">
+        <div class="header">
+            <h4 class="title">Problems on Trains</h4>
+            <p class="category">Master distance, speed, and time-based train problems</p>
+        </div>
+        <div class="content table-responsive table-full-width">
+            <table class="table table-hover table-striped">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Question</th>
+                        <th>Type</th>
+                        <th>Difficulty Level</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for i in range(1, 51) %}
+                    <tr>
+                        <td>{{ i }}</td>
+                        {% if i == 1 %}
+                        <td>A train running at 60 km/hr crosses a pole in 30 seconds. Find the length of the train.</td>
+                        <td>Speed and Length</td>
+                        <td>Easy</td>
+                        <td>
+                            <a href="#" class="btn btn-success btn-sm" onclick="showExplanation({{ i }})">Answer</a>
+                            <div id="explanation-{{ i }}" class="explanation-box mt-2" style="display: none;">
+                                <strong>Explanation:</strong> The length of the train can be calculated by using the formula:
+                                Length = Speed × Time. First, convert the speed from km/h to m/s and then use the formula to find the length of the train.
+                            </div>
+                            <br />
+                            <button class="btn btn-primary btn-sm" onclick="markComplete({{ i }})" id="complete-{{ i }}">Mark as Complete</button>
+                            <span id="status-{{ i }}" style="display:none;" class="ml-2 text-success">Completed</span>
+                        </td>
+                        {% elif i == 2 %}
+                        <td>Two trains running in opposite directions at 50 km/hr and 70 km/hr pass each other in 10 seconds. Find the sum of their lengths.</td>
+                        <td>Relative Speed</td>
+                        <td>Medium</td>
+                        <td>
+                            <a href="#" class="btn btn-success btn-sm" onclick="showExplanation({{ i }})">Answer</a>
+                            <div id="explanation-{{ i }}" class="explanation-box mt-2" style="display: none;">
+                                <strong>Explanation:</strong> Use the concept of relative speed. The relative speed is the sum of the speeds of the two trains when they are moving in opposite directions.
+                                The combined length of the trains is then found using the formula: Distance = Speed × Time.
+                            </div>
+                            <br />
+                            <button class="btn btn-primary btn-sm" onclick="markComplete({{ i }})" id="complete-{{ i }}">Mark as Complete</button>
+                            <span id="status-{{ i }}" style="display:none;" class="ml-2 text-success">Completed</span>
+                        </td>
+                        {% elif i == 3 %}
+                        <td>A train 150 meters long is running at 45 km/hr. How long will it take to cross a platform 100 meters long?</td>
+                        <td>Crossing Platform</td>
+                        <td>Medium</td>
+                        <td>
+                            <a href="#" class="btn btn-success btn-sm" onclick="showExplanation({{ i }})">Answer</a>
+                            <div id="explanation-{{ i }}" class="explanation-box mt-2" style="display: none;">
+                                <strong>Explanation:</strong> To calculate the time taken to cross the platform, we need to use the formula:
+                                Time = Distance / Speed. The total distance will be the sum of the length of the train and the length of the platform.
+                            </div>
+                            <br />
+                            <button class="btn btn-primary btn-sm" onclick="markComplete({{ i }})" id="complete-{{ i }}">Mark as Complete</button>
+                            <span id="status-{{ i }}" style="display:none;" class="ml-2 text-success">Completed</span>
+                        </td>
+                        {% elif i == 4 %}
+                        <td>A train overtakes two persons walking at 5 km/hr and 7 km/hr in 20 and 25 seconds respectively. Find the length and speed of the train.</td>
+                        <td>Overtaking</td>
+                        <td>Hard</td>
+                        <td>
+                            <a href="#" class="btn btn-success btn-sm" onclick="showExplanation({{ i }})">Answer</a>
+                            <div id="explanation-{{ i }}" class="explanation-box mt-2" style="display: none;">
+                                <strong>Explanation:</strong> To solve this problem, use the concept of relative speed for each person. The length of the train can be found by calculating the relative speed with respect to each person and then using the formula:
+                                Length of Train = Speed × Time.
+                            </div>
+                            <br />
+                            <button class="btn btn-primary btn-sm" onclick="markComplete({{ i }})" id="complete-{{ i }}">Mark as Complete</button>
+                            <span id="status-{{ i }}" style="display:none;" class="ml-2 text-success">Completed</span>
+                        </td>
+                        {% else %}
+                        <td>
+                            {% if i % 5 == 0 %}
+                            A train {{ 40 + (i % 10) * 5 }} meters long is running at {{ 30 + (i % 7) * 10 }} km/hr. How long will it take to pass a platform of length {{ 100 + (i % 3) * 50 }} meters?
+                            {% elif i % 3 == 0 %}
+                            Two trains running at {{ 50 + (i % 6) * 5 }} km/hr and {{ 60 + (i % 4) * 5 }} km/hr pass each other in {{ 8 + (i % 4) }} seconds. Find their combined length.
+                            {% elif i % 2 == 0 %}
+                            A train crosses a bridge {{ 200 + (i % 5) * 30 }} meters long in {{ 15 + (i % 4) * 5 }} seconds at a speed of {{ 40 + (i % 6) * 10 }} km/hr. Find the length of the train.
+                            {% else %}
+                            A train running at {{ 40 + (i % 5) * 8 }} km/hr overtakes a person walking at {{ 5 + (i % 3) * 2 }} km/hr in {{ 10 + (i % 4) * 5 }} seconds. Find the length of the train.
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if i % 4 == 0 %}
+                            Overtaking
+                            {% elif i % 3 == 0 %}
+                            Relative Speed
+                            {% elif i % 2 == 0 %}
+                            Crossing Platform
+                            {% else %}
+                            Speed and Length
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if i <= 10 %}
+                            Easy
+                            {% elif i <= 30 %}
+                            Medium
+                            {% else %}
+                            Hard
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="#" class="btn btn-success btn-sm" onclick="showExplanation({{ i }})">Answer</a>
+                            <div id="explanation-{{ i }}" class="explanation-box mt-2" style="display: none;">
+                                <strong>Explanation:</strong> Explanation text will be here.
+                            </div>
+                            <br />
+                            <button class="btn btn-primary btn-sm" onclick="markComplete({{ i }})" id="complete-{{ i }}">Mark as Complete</button>
+                            <span id="status-{{ i }}" style="display:none;" class="ml-2 text-success">Completed</span>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+function showExplanation(id) {
+    let explanationBox = document.getElementById("explanation-" + id);
+    explanationBox.style.display = "block";
+    setTimeout(function() {
+        explanationBox.style.display = "none";
+    }, 5000); // Hide after 5 seconds
+}
+
+function markComplete(id) {
+    let completeButton = document.getElementById("complete-" + id);
+    let statusText = document.getElementById("status-" + id);
+
+    // Replace with actual user_id and topic_id
+    const user_id = {{ session['user_id'] }};
+    const topic_id = 11; // Update topic_id for parajumbles
+
+    // Make an AJAX call to update the database
+    fetch('/mark_complete', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ user_id: user_id, topic_id: topic_id, problem_id: id })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            completeButton.style.display = "none";  // Hide the "Mark as Complete" button
+            statusText.style.display = "inline";   // Show the "Completed" status
+        } else {
+            alert('Failed to mark as complete');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to mark as complete');
+    });
+}
+</script>
+
+{% endblock %}
