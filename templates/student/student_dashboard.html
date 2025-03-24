@@ -1,476 +1,688 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="utf-8" />
-        <link rel="icon" type="image/png" href="assets/img/favicon.ico">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
-    
-        <title>Light Bootstrap Dashboard by Creative Tim</title>
-    
-        <meta content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0' name='viewport' />
-        <meta name="viewport" content="width=device-width" />
-    
-    
-      
-        <!-- Bootstrap core CSS -->
-     <!-- Bootstrap core CSS -->
-     <link href="{{ url_for('static', filename='assets/css/bootstrap.min.css') }}" rel="stylesheet" />
-    
-     <!-- Animation library for notifications -->
-     <link href="{{ url_for('static', filename='assets/css/animate.min.css') }}" rel="stylesheet" />
-     
-     <!-- Light Bootstrap Table core CSS -->
-     <link href="{{ url_for('static', filename='assets/css/light-bootstrap-dashboard.css') }}" rel="stylesheet" />
-     
-     <!-- CSS for Demo Purpose -->
-     <link href="{{ url_for('static', filename='assets/css/demo.css') }}" rel="stylesheet" />
-     
-     <!-- Fonts and icons -->
-     <link href="http://maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet">
-     <link href="https://fonts.googleapis.com/css?family=Roboto:400,700,300" rel="stylesheet" type="text/css">
-     <link href="{{ url_for('static', filename='assets/css/pe-icon-7-stroke.css') }}" rel="stylesheet" />
-    
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/png" href="assets/img/favicon.ico" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+
+    <title>Light Bootstrap Dashboard by Creative Tim</title>
+
+    <meta
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"
+      name="viewport"
+    />
+    <meta name="viewport" content="width=device-width" />
+
+    <!-- Bootstrap core CSS -->
+    <!-- Bootstrap core CSS -->
+    <link
+      href="{{ url_for('static', filename='assets/css/bootstrap.min.css') }}"
+      rel="stylesheet"
+    />
+
+    <!-- Animation library for notifications -->
+    <link
+      href="{{ url_for('static', filename='assets/css/animate.min.css') }}"
+      rel="stylesheet"
+    />
+
+    <!-- Light Bootstrap Table core CSS -->
+    <link
+      href="{{ url_for('static', filename='assets/css/light-bootstrap-dashboard.css') }}"
+      rel="stylesheet"
+    />
+
+    <!-- CSS for Demo Purpose -->
+    <link
+      href="{{ url_for('static', filename='assets/css/demo.css') }}"
+      rel="stylesheet"
+    />
+
+    <!-- Fonts and icons -->
+    <link
+      href="http://maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css?family=Roboto:400,700,300"
+      rel="stylesheet"
+      type="text/css"
+    />
+    <link
+      href="{{ url_for('static', filename='assets/css/pe-icon-7-stroke.css') }}"
+      rel="stylesheet"
+    />
+
     <style>
-        canvas {
-            width: 100% !important; /* Ensures the canvas takes full width of its container */
-            height: 300px !important; /* Sets a fixed height for the canvas */
-        }
+      canvas {
+        width: 100% !important; /* Ensures the canvas takes full width of its container */
+        height: 300px !important; /* Sets a fixed height for the canvas */
+      }
 
-        .chart-row {
-            margin-top: 20px;
-            margin-bottom: 20px;
-            margin-left: 5px;
-            margin-right: 5px;
-        }
+      .chart-row {
+        margin-top: 20px;
+        margin-bottom: 20px;
+        margin-left: 5px;
+        margin-right: 5px;
+      }
+
+      .topic-detail {
+        font-size: 0.9em;
+        background-color: rgba(0,0,0,0.02);
+      }
+      
+      .topic-detail td:first-child {
+        color: #777;
+      }
+
+      /* Additional styles for better table display */
+      #progress-table-body tr td {
+        vertical-align: middle;
+        padding: 10px 8px;
+      }
+      
+      #progress-table-body .category-row {
+        font-size: 1.1em;
+        border-top: 2px solid #ddd;
+      }
+      
+      #progress-table-body .progress {
+        border-radius: 10px;
+        overflow: hidden;
+      }
+      
+      #progress-table-body .progress-bar {
+        text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        font-weight: bold;
+        min-width: 30px;
+      }
+      
+      .status-indicator {
+        display: inline-block;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-weight: bold;
+      }
+      
+      .status-completed {
+        background-color: rgba(52, 168, 83, 0.2);
+        color: #2b8049;
+      }
+      
+      .status-in-progress {
+        background-color: rgba(251, 188, 5, 0.2);
+        color: #b78103;
+      }
+      
+      .status-not-started {
+        background-color: rgba(234, 67, 53, 0.2);
+        color: #c62a28;
+      }
+      
+      .completed-count {
+        font-size: 1.1em;
+        font-weight: bold;
+        color: #3472F7;
+      }
     </style>
-    
-    </head>
-    
-    
-<body>
+  </head>
 
-<div class="wrapper">
-    <div class="sidebar" data-color="purple" data-image="assets/img/sidebar-5.jpg">
-
-    <!--
+  <body>
+    <div class="wrapper">
+      <div
+        class="sidebar"
+        data-color="purple"
+        data-image="assets/img/sidebar-5.jpg"
+      >
+        <!--
 
         Tip 1: you can change the color of the sidebar using: data-color="blue | azure | green | orange | red | purple"
         Tip 2: you can also add an image using data-image tag
 
     -->
 
-    	<div class="sidebar-wrapper">
-            <div class="logo">
-                <a href="http://www.creative-tim.com" class="simple-text">
-                    Prep_Smart
-                </a>
-            </div>
+        <div class="sidebar-wrapper">
+          <div class="logo">
+            <a href="http://www.creative-tim.com" class="simple-text">
+              Prep_Smart
+            </a>
+          </div>
 
-            <ul class="nav">
-                <li class="active">
-                    <a href="{{ url_for('dashboard') }}">
-                        <i class="pe-7s-graph"></i>
-                        <p>Dashboard</p>
-                    </a>
-                </li>
-                <li>
-                    <a href="{{ url_for('user_profile') }}">  <!-- Use the correct endpoint -->
-                        <i class="pe-7s-user"></i>
-                        <p>User Profile</p>
-                    </a>
-                </li>
-                
-                <li>
-                    <a href="{{ url_for('aptitude') }}">
-                        <i class="pe-7s-note2"></i>
-                        <p>Aptitude Preparation</p>
-                    </a>
-                </li>
-                <li>
-                    <a href="{{ url_for('communication') }}">
-                        <i class="pe-7s-news-paper"></i>
-                        <p>Communication Skills</p>
-                    </a>
-                </li>
-                <li>
-                    <a href="{{ url_for('dsa') }}">
-                        <i class="pe-7s-science"></i>
-                        <p>DSA</p>
-                    </a>
-                </li>
-                <li>
-                    <a href="{{ url_for('interview') }}">
-                        <i class="pe-7s-map-marker"></i>
-                        <p>Interview Preparation</p>
-                    </a>
-                </li>
-                <li>
-                    <a href="{{ url_for('notifications') }}">
-                        <i class="pe-7s-bell"></i>
-                        <p>Notifications</p>
-                    </a>
-                </li>
-                <li class="active-pro">
-                    <a href="{{ url_for('home') }}">
-                        <i class="pe-7s-rocket"></i>
-                        <p>Home</p>
-                    </a>
-                </li>
-            </ul>
-    	</div>
-    </div>
+          <ul class="nav">
+            <li class="active">
+              <a href="{{ url_for('dashboard') }}">
+                <i class="pe-7s-graph"></i>
+                <p>Dashboard</p>
+              </a>
+            </li>
+            <li>
+              <a href="{{ url_for('user_profile') }}">
+                <!-- Use the correct endpoint -->
+                <i class="pe-7s-user"></i>
+                <p>User Profile</p>
+              </a>
+            </li>
 
-    <div class="main-panel">
+            <li>
+              <a href="{{ url_for('aptitude') }}">
+                <i class="pe-7s-note2"></i>
+                <p>Aptitude Preparation</p>
+              </a>
+            </li>
+            <li>
+              <a href="{{ url_for('communication') }}">
+                <i class="pe-7s-news-paper"></i>
+                <p>Communication Skills</p>
+              </a>
+            </li>
+            <li>
+              <a href="{{ url_for('dsa') }}">
+                <i class="pe-7s-science"></i>
+                <p>DSA</p>
+              </a>
+            </li>
+            <li>
+              <a href="{{ url_for('interview') }}">
+                <i class="pe-7s-map-marker"></i>
+                <p>Interview Preparation</p>
+              </a>
+            </li>
+            <li>
+              <a href="{{ url_for('notifications') }}">
+                <i class="pe-7s-bell"></i>
+                <p>Notifications</p>
+              </a>
+            </li>
+            <li class="active-pro">
+              <a href="{{ url_for('home') }}">
+                <i class="pe-7s-rocket"></i>
+                <p>Home</p>
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="main-panel">
         <nav class="navbar navbar-default navbar-fixed">
-            <div class="container-fluid">
-                <div class="navbar-header">
-                    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navigation-example-2">
-                        <span class="sr-only">Toggle navigation</span>
-                        <span class="icon-bar"></span>
-                        <span class="icon-bar"></span>
-                        <span class="icon-bar"></span>
-                    </button>
-                    <a class="navbar-brand" href="#">Dashboard</a>
-                </div>
-                <div class="collapse navbar-collapse">
-                    <ul class="nav navbar-nav navbar-left">
-                        <li>
-                            <a href="#" class="dropdown-toggle" data-toggle="dropdown">
-                                <i class="fa fa-dashboard"></i>
-								<p class="hidden-lg hidden-md">Dashboard</p>
-                            </a>
-                        </li>
-                        <li class="dropdown">
-                              <a href="#" class="dropdown-toggle" data-toggle="dropdown">
-                                    <i class="fa fa-globe"></i>
-                                    <b class="caret hidden-lg hidden-md"></b>
-									<p class="hidden-lg hidden-md">
-										5 Notifications
-										<b class="caret"></b>
-									</p>
-                              </a>
-                              <ul class="dropdown-menu">
-                                <li><a href="#">Notification 1</a></li>
-                                <li><a href="#">Notification 2</a></li>
-                                <!-- <li><a href="#">Notification 3</a></li>
+          <div class="container-fluid">
+            <div class="navbar-header">
+              <button
+                type="button"
+                class="navbar-toggle"
+                data-toggle="collapse"
+                data-target="#navigation-example-2"
+              >
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+              <a class="navbar-brand" href="#">Dashboard</a>
+            </div>
+            <div class="collapse navbar-collapse">
+              <ul class="nav navbar-nav navbar-left">
+                <li>
+                  <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                    <i class="fa fa-dashboard"></i>
+                    <p class="hidden-lg hidden-md">Dashboard</p>
+                  </a>
+                </li>
+                <li class="dropdown">
+                  <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                    <i class="fa fa-globe"></i>
+                    <b class="caret hidden-lg hidden-md"></b>
+                    <p class="hidden-lg hidden-md">
+                      5 Notifications
+                      <b class="caret"></b>
+                    </p>
+                  </a>
+                  <ul class="dropdown-menu">
+                    <li><a href="#">Notification 1</a></li>
+                    <li><a href="#">Notification 2</a></li>
+                    <!-- <li><a href="#">Notification 3</a></li>
                                 <li><a href="#">Notification 4</a></li>
                                 <li><a href="#">Another notification</a></li> -->
-                              </ul>
-                        </li>
-                        <li>
-                           <a href="">
-                                <i class="fa fa-search"></i>
-								<p class="hidden-lg hidden-md">Search</p>
-                            </a>
-                        </li>
-                    </ul>
+                  </ul>
+                </li>
+                <li>
+                  <a href="">
+                    <i class="fa fa-search"></i>
+                    <p class="hidden-lg hidden-md">Search</p>
+                  </a>
+                </li>
+              </ul>
 
-                    <ul class="nav navbar-nav navbar-right">
-                        <li>
-                           <a href="">
-                               <p>Account</p>
-                            </a>
-                        </li>
-                        <li class="dropdown">
-                              <a href="#" class="dropdown-toggle" data-toggle="dropdown">
-                                    <p>
-										Dropdown
-										<b class="caret"></b>
-									</p>
-
-                              </a>
-                              <ul class="dropdown-menu">
-                                <li><a href="#">Action</a></li>
-                                <li><a href="#">Another action</a></li>
-                                <!-- <li><a href="#">Something</a></li>
+              <ul class="nav navbar-nav navbar-right">
+                <li>
+                  <a href="">
+                    <p>Account</p>
+                  </a>
+                </li>
+                <li class="dropdown">
+                  <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                    <p>
+                      Dropdown
+                      <b class="caret"></b>
+                    </p>
+                  </a>
+                  <ul class="dropdown-menu">
+                    <li><a href="#">Action</a></li>
+                    <li><a href="#">Another action</a></li>
+                    <!-- <li><a href="#">Something</a></li>
                                 <li><a href="#">Another action</a></li>
                                 <li><a href="#">Something</a></li>
                                 <li class="divider"></li>
                                 <li><a href="#">Separated link</a></li> -->
-                              </ul>
-                        </li>
-                        <li>
-                            <a href="{{ url_for('logout') }}">
-                                <p>Log out</p>
-                            </a>
-                        </li>
-						<li class="separator hidden-lg"></li>
-                    </ul>
-                </div>
+                  </ul>
+                </li>
+                <li>
+                  <a href="{{ url_for('logout') }}">
+                    <p>Log out</p>
+                  </a>
+                </li>
+                <li class="separator hidden-lg"></li>
+              </ul>
             </div>
+          </div>
         </nav>
 
         <div class="content">
-            <div class="container-fluid">
-                <!-- Progress Overview Cards -->
-                <div class="row">
-                    <div class="col-md-4">
-                        <div class="card">
-                            <div class="header">
-                                <h4 class="title">DSA Progress</h4>
-                                <p class="category">Data Structures and Algorithms</p>
-                            </div>
-                            <div class="content">
-                                <div class="progress" style="height: 20px;">
-                                    <div id="dsa-progress-bar" 
-                                        class="progress-bar progress-bar-info" 
-                                        role="progressbar" 
-                                        style="width: 0%;">
-                                        0%
-                                    </div>
-                                </div>
-                                <div class="footer">
-                                    <hr>
-                                    <div class="stats">
-                                        <i class="fa fa-check"></i> <span id="dsa-completed">0</span> topics completed
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+          <div class="container-fluid">
+            <!-- Progress Overview Cards -->
+            <div class="row">
+              <div class="col-md-4">
+                <div class="card">
+                  <div class="header">
+                    <h4 class="title">DSA Progress</h4>
+                    <p class="category">Data Structures and Algorithms</p>
+                  </div>
+                  <div class="content">
+                    <div class="progress" style="height: 20px">
+                      <div
+                        id="dsa-progress-bar"
+                        class="progress-bar progress-bar-info"
+                        role="progressbar"
+                        style="width: 0%"
+                      >
+                        0%
+                      </div>
                     </div>
-
-                    <div class="col-md-4">
-                        <div class="card">
-                            <div class="header">
-                                <h4 class="title">Communication Skills</h4>
-                                <p class="category">Soft Skills Development</p>
-                            </div>
-                            <div class="content">
-                                <div class="progress" style="height: 20px;">
-                                    <div id="communication-progress-bar" 
-                                        class="progress-bar progress-bar-success" 
-                                        role="progressbar" 
-                                        style="width: 0%;">
-                                        0%
-                                    </div>
-                                </div>
-                                <div class="footer">
-                                    <hr>
-                                    <div class="stats">
-                                        <i class="fa fa-check"></i> <span id="communication-completed">0</span> topics completed
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                    <div class="footer">
+                      <hr />
+                      <div class="stats">
+                        <i class="fa fa-check"></i>
+                        <span id="dsa-completed">0</span> topics completed
+                      </div>
                     </div>
-
-                    <div class="col-md-4">
-                        <div class="card">
-                            <div class="header">
-                                <h4 class="title">Aptitude</h4>
-                                <p class="category">Quantitative & Logical</p>
-                            </div>
-                            <div class="content">
-                                <div class="progress" style="height: 20px;">
-                                    <div id="aptitude-progress-bar" 
-                                        class="progress-bar progress-bar-warning" 
-                                        role="progressbar" 
-                                        style="width: 0%;">
-                                        0%
-                                    </div>
-                                </div>
-                                <div class="footer">
-                                    <hr>
-                                    <div class="stats">
-                                        <i class="fa fa-check"></i> <span id="aptitude-completed">0</span> topics completed
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                  </div>
                 </div>
+              </div>
 
-                <!-- Detailed Progress Table -->
-                <div class="row">
-                    <div class="col-md-12">
-                        <div class="card">
-                            <div class="header">
-                                <h4 class="title">Detailed Progress</h4>
-                                <p class="category">Complete progress breakdown</p>
-                            </div>
-                            <div class="content table-responsive table-full-width">
-                                <table class="table table-hover table-striped">
-                                    <thead>
-                                        <tr>
-                                            <th>Topic</th>
-                                            <th>Completed</th>
-                                            <th>Total</th>
-                                            <th>Progress</th>
-                                            <th>Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="progress-table-body">
-                                        <!-- Will be populated by JavaScript -->
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
+              <div class="col-md-4">
+                <div class="card">
+                  <div class="header">
+                    <h4 class="title">Communication Skills</h4>
+                    <p class="category">Soft Skills Development</p>
+                  </div>
+                  <div class="content">
+                    <div class="progress" style="height: 20px">
+                      <div
+                        id="communication-progress-bar"
+                        class="progress-bar progress-bar-success"
+                        role="progressbar"
+                        style="width: 0%"
+                      >
+                        0%
+                      </div>
                     </div>
+                    <div class="footer">
+                      <hr />
+                      <div class="stats">
+                        <i class="fa fa-check"></i>
+                        <span id="communication-completed">0</span> topics
+                        completed
+                      </div>
+                    </div>
+                  </div>
                 </div>
+              </div>
+
+              <div class="col-md-4">
+                <div class="card">
+                  <div class="header">
+                    <h4 class="title">Aptitude</h4>
+                    <p class="category">Quantitative & Logical</p>
+                  </div>
+                  <div class="content">
+                    <div class="progress" style="height: 20px">
+                      <div
+                        id="aptitude-progress-bar"
+                        class="progress-bar progress-bar-warning"
+                        role="progressbar"
+                        style="width: 0%"
+                      >
+                        0%
+                      </div>
+                    </div>
+                    <div class="footer">
+                      <hr />
+                      <div class="stats">
+                        <i class="fa fa-check"></i>
+                        <span id="aptitude-completed">0</span> topics completed
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
+
+            <!-- Add visualization charts for progress -->
+            <div class="row chart-row">
+              <div class="col-md-12">
+                <div class="card">
+                  <div class="header">
+                    <h4 class="title">Overall Progress</h4>
+                    <p class="category">Visual comparison of all categories</p>
+                  </div>
+                  <div class="content">
+                    <canvas id="progress-chart"></canvas>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <footer class="footer">
-            <div class="container-fluid">
-                <nav class="pull-left">
-                    <ul>
-                        <li>
-                            <a href="#">
-                                Home
-                            </a>
-                        </li>
-                        <li>
-                            <a href="#">
-                                Company
-                            </a>
-                        </li>
-                        <li>
-                            <a href="#">
-                                Portfolio
-                            </a>
-                        </li>
-                        <li>
-                            <a href="#">
-                               Blog
-                            </a>
-                        </li>
-                    </ul>
-                </nav>
-                <p class="copyright pull-right">
-                    &copy; <script>document.write(new Date().getFullYear())</script> <a href="http://www.creative-tim.com">Creative Tim</a>, made with love for a better web
-                </p>
-            </div>
+          <div class="container-fluid">
+            <nav class="pull-left">
+              <ul>
+                <li>
+                  <a href="#"> Home </a>
+                </li>
+                <li>
+                  <a href="#"> Company </a>
+                </li>
+                <li>
+                  <a href="#"> Portfolio </a>
+                </li>
+                <li>
+                  <a href="#"> Blog </a>
+                </li>
+              </ul>
+            </nav>
+            <p class="copyright pull-right">
+              &copy;
+              <script>
+                document.write(new Date().getFullYear());
+              </script>
+              <a href="http://www.creative-tim.com">Creative Tim</a>, made with
+              love for a better web
+            </p>
+          </div>
         </footer>
-
+      </div>
     </div>
-</div>
+  </body>
 
+  <!-- Core JS Files -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="{{ url_for('static', filename='assets/js/bootstrap.min.js') }}"></script>
 
-</body>
+  <!-- Charts Plugin -->
+  <script src="{{ url_for('static', filename='assets/js/chartist.min.js') }}"></script>
 
-   <!-- Core JS Files -->
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="{{ url_for('static', filename='assets/js/bootstrap.min.js') }}"></script>
+  <!-- Notifications Plugin -->
+  <script src="{{ url_for('static', filename='assets/js/bootstrap-notify.js') }}"></script>
 
-<!-- Charts Plugin -->
-<script src="{{ url_for('static', filename='assets/js/chartist.min.js') }}"></script>
+  <!-- Google Maps Plugin -->
+  <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_KEY_HERE"></script>
 
-<!-- Notifications Plugin -->
-<script src="{{ url_for('static', filename='assets/js/bootstrap-notify.js') }}"></script>
+  <!-- Light Bootstrap Table Core JavaScript -->
+  <script src="{{ url_for('static', filename='assets/js/light-bootstrap-dashboard.js') }}"></script>
 
-<!-- Google Maps Plugin -->
-<script src="https://maps.googleapis.com/maps/api/js?key=YOUR_KEY_HERE"></script>
+  <!-- Demo Script (Remove in Production) -->
+  <script src="{{ url_for('static', filename='assets/js/demo.js') }}"></script>
 
-<!-- Light Bootstrap Table Core JavaScript -->
-<script src="{{ url_for('static', filename='assets/js/light-bootstrap-dashboard.js') }}"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    // Progress chart variables
+    let progressChart = null;
 
-<!-- Demo Script (Remove in Production) -->
-<script src="{{ url_for('static', filename='assets/js/demo.js') }}"></script>
-
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
     async function fetchProgressData() {
-        try {
-            const response = await fetch('/get_progress');
-            const data = await response.json();
+      try {
+        // First ensure database tables exist
+        await fetch("/fix_missing_tables");
+        console.log("Tables fixed");
+        
+        const response = await fetch("/get_progress");
+        const data = await response.json();
 
-            if (!data.success) {
-                console.error("Error fetching progress:", data.message);
-                return;
-            }
-
-            // Update progress bars
-            updateProgress('dsa', data.DSA);
-            updateProgress('communication', data.Communication);
-            updateProgress('aptitude', data.Aptitude);
-
-            // Update detailed progress table
-            updateProgressTable(data);
-
-        } catch (error) {
-            console.error("Error fetching progress:", error);
+        console.log("Raw progress data:", data); // Debug logging
+        
+        // Set default values to 0 for new users
+        let dsaProgress = 0;
+        let commProgress = 0;
+        let aptitudeProgress = 0;
+        
+        if (data.success) {
+          // Only use the data if it exists and is greater than 0
+          dsaProgress = data.DSA > 0 ? data.DSA : 0;
+          commProgress = data.Communication > 0 ? data.Communication : 0;
+          aptitudeProgress = data.Aptitude > 0 ? data.Aptitude : 0;
+          
+          console.log(`Progress values - DSA: ${dsaProgress}, Comm: ${commProgress}, Aptitude: ${aptitudeProgress}`);
+        } else {
+          console.error("Error fetching progress:", data.message);
         }
+
+        // Update progress bars with our determined values
+        updateProgress("dsa", dsaProgress);
+        updateProgress("communication", commProgress);
+        updateProgress("aptitude", aptitudeProgress);
+        
+        // Update charts
+        updateCharts({
+          DSA: dsaProgress,
+          Communication: commProgress,
+          Aptitude: aptitudeProgress
+        });
+      } catch (error) {
+        console.error("Error in fetchProgressData:", error);
+      }
     }
 
     function updateProgress(type, progress) {
-        const progressBar = document.getElementById(`${type}-progress-bar`);
-        const completedSpan = document.getElementById(`${type}-completed`);
+      const progressBar = document.getElementById(`${type}-progress-bar`);
+      const completedSpan = document.getElementById(`${type}-completed`);
+
+      if (progressBar && completedSpan) {
+        // Ensure progress is a number and clamp between 0-100
+        const safeProgress = typeof progress === 'number' ? 
+          Math.min(Math.max(progress, 0), 100) : 0;
         
-        if (progressBar && completedSpan) {
-            const roundedProgress = Math.round(progress);
-            progressBar.style.width = `${roundedProgress}%`;
-            progressBar.textContent = `${roundedProgress}%`;
-            
-            // Calculate completed topics based on progress percentage
-            const completedCount = Math.ceil((progress / 100) * 10);
-            completedSpan.textContent = completedCount;
+        // Show one decimal place for more precision
+        const roundedProgress = Math.round(safeProgress * 10) / 10;
+        
+        // Create animated transition for progress bar
+        progressBar.style.transition = 'width 1s ease, background-color 1s ease';
+        progressBar.style.width = `${roundedProgress}%`;
+        progressBar.textContent = `${roundedProgress}%`;
+
+        // Make the percentage more prominent with a colorful badge and tooltip
+        const statsDiv = completedSpan.closest('.stats');
+        if (statsDiv) {
+          statsDiv.innerHTML = `
+            <i class="fa fa-check"></i>
+            <span class="label label-${
+              type === 'dsa' ? 'info' : 
+              type === 'communication' ? 'success' : 
+              'warning'
+            }" style="font-size: 1.2em; padding: 5px 10px; margin-left: 5px;" 
+               title="Completed ${roundedProgress}% of total questions">
+              ${roundedProgress}%
+            </span>
+            <span style="margin-left: 5px;">completed</span>
+          `;
         }
-    }
-
-    function updateProgressTable(data) {
-        const tableBody = document.getElementById('progress-table-body');
-        if (!tableBody) return;
-
-        const topics = {
-            'DSA': { progress: data.DSA, total: 10 },
-            'Communication': { progress: data.Communication, total: 10 },
-            'Aptitude': { progress: data.Aptitude, total: 10 }
-        };
-
-        tableBody.innerHTML = '';
         
-        Object.entries(topics).forEach(([topic, info]) => {
-            const completed = Math.ceil((info.progress / 100) * info.total);
-            const status = info.progress >= 100 ? 'Completed' : 'In Progress';
-            const statusClass = info.progress >= 100 ? 'text-success' : 'text-warning';
-
-            tableBody.innerHTML += `
-                <tr>
-                    <td>${topic}</td>
-                    <td>${completed}</td>
-                    <td>${info.total}</td>
-                    <td>
-                        <div class="progress" style="margin-bottom: 0;">
-                            <div class="progress-bar" role="progressbar" 
-                                style="width: ${info.progress}%;" 
-                                aria-valuenow="${info.progress}" 
-                                aria-valuemin="0" 
-                                aria-valuemax="100">
-                                ${Math.round(info.progress)}%
-                            </div>
-                        </div>
-                    </td>
-                    <td class="${statusClass}">${status}</td>
-                </tr>
-            `;
-        });
-    }
-
-    // Load progress data when page loads
-    document.addEventListener('DOMContentLoaded', fetchProgressData);
-</script>
-
-
-
-
-<script type="text/javascript">
-    $(document).ready(function(){
-        if (typeof demo !== "undefined" && demo.initChartist) {
-            demo.initChartist();
+        // Set vibrant colors based on the category
+        if (type === 'dsa') {
+          progressBar.style.backgroundColor = 'rgba(66, 133, 244, 0.9)';
+        } else if (type === 'communication') {
+          progressBar.style.backgroundColor = 'rgba(52, 168, 83, 0.9)';
         } else {
-            console.error("Chartist initialization failed: demo.initChartist() is not defined.");
+          progressBar.style.backgroundColor = 'rgba(251, 188, 5, 0.9)';
         }
+        
+        // Style changes based on progress value
+        if (safeProgress < 30) {
+          progressBar.style.opacity = '0.8';
+        } else {
+          progressBar.style.opacity = '1';
+        }
+        
+        // Add shadow effect for more visual pop
+        progressBar.style.boxShadow = '0 1px 3px rgba(0,0,0,0.2)';
+      }
+    }
 
-        $.notify({
-            icon: 'pe-7s-gift',
-            message: "Welcome to <b>Your Dashboard</b> - Have a great day."
-        },{
-            type: 'info',
-            timer: 4000
-        });
+    function updateCharts(data) {
+      const progressCtx = document.getElementById('progress-chart');
+      
+      if (!progressCtx) {
+        console.error("Chart canvas not found");
+        return;
+      }
+      
+      // Ensure we have valid data and default to 0 for new users
+      const dsaValue = typeof data.DSA === 'number' && data.DSA > 0 ? data.DSA : 0;
+      const commValue = typeof data.Communication === 'number' && data.Communication > 0 ? data.Communication : 0;
+      const aptiValue = typeof data.Aptitude === 'number' && data.Aptitude > 0 ? data.Aptitude : 0;
+      
+      // Destroy existing chart if it exists
+      if (progressChart) progressChart.destroy();
+      
+      // Create overall progress chart with vibrant colors
+      progressChart = new Chart(progressCtx.getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: ['DSA', 'Communication', 'Aptitude'],
+          datasets: [{
+            label: 'Progress (%)',
+            data: [dsaValue, commValue, aptiValue],
+            backgroundColor: [
+              'rgba(66, 133, 244, 0.7)',  // Google blue for DSA
+              'rgba(52, 168, 83, 0.7)',   // Google green for Communication
+              'rgba(251, 188, 5, 0.7)'    // Google yellow for Aptitude
+            ],
+            borderColor: [
+              'rgba(66, 133, 244, 1)',    // Google blue
+              'rgba(52, 168, 83, 1)',     // Google green
+              'rgba(251, 188, 5, 1)'      // Google yellow
+            ],
+            borderWidth: 2,
+            borderRadius: 6,
+            hoverBackgroundColor: [
+              'rgba(66, 133, 244, 0.9)',
+              'rgba(52, 168, 83, 0.9)',
+              'rgba(251, 188, 5, 0.9)'
+            ]
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false  // Hide legend as it's redundant with the labels
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return `Progress: ${context.raw}%`;
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 100,
+              grid: {
+                color: 'rgba(0, 0, 0, 0.05)'
+              },
+              ticks: {
+                callback: function(value) {
+                  return value + '%';
+                },
+                color: '#666'
+              }
+            },
+            x: {
+              grid: {
+                display: false
+              },
+              ticks: {
+                color: '#666',
+                font: {
+                  weight: 'bold'
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // Make sure both functions get called when the page loads
+    document.addEventListener("DOMContentLoaded", async function() {
+      try {
+        console.log("DOM loaded, starting initialization...");
+        
+        // First ensure the database schema and tables are fixed
+        try {
+          const dbFix = await fetch("/fix_db_schema");
+          console.log("Database schema fixed");
+          
+          const tablesFix = await fetch("/fix_missing_tables");
+          console.log("Tables fixed");
+        } catch (e) {
+          console.error("Could not fix database:", e);
+        }
+        
+        // Now fetch progress data
+        await fetchProgressData();
+        console.log("Progress data loaded");
+        
+      } catch (mainError) {
+        console.error("Main initialization error:", mainError);
+        alert("There was an error loading the dashboard. Please try refreshing the page.");
+      }
     });
-</script>
+  </script>
 
+  <script type="text/javascript">
+    $(document).ready(function () {
+      if (typeof demo !== "undefined" && demo.initChartist) {
+        demo.initChartist();
+      } else {
+        console.error(
+          "Chartist initialization failed: demo.initChartist() is not defined."
+        );
+      }
 
+      $.notify(
+        {
+          icon: "pe-7s-gift",
+          message: "Welcome to <b>Your Dashboard</b> - Have a great day.",
+        },
+        {
+          type: "info",
+          timer: 4000,
+        }
+      );
+    });
+  </script>
 </html>

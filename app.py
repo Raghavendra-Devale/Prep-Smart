@@ -1,3 +1,4 @@
+import traceback
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 import sqlite3
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -153,80 +154,72 @@ def logout():
 
 def get_student_progress():
     if 'user_id' not in session:
-        return {}
-
+        return {'success': False, 'message': 'Not logged in'}
+        
     try:
         db = get_db_connection()
         cursor = db.cursor()
-
-        # Get student ID from session
+        
+        # Get student_id
         cursor.execute("SELECT id FROM students WHERE user_id = ?", (session['user_id'],))
         result = cursor.fetchone()
         if not result:
-            return {}
-
+            return {'success': False, 'message': 'Student not found'}
+            
         student_id = result[0]
-
-        # Get DSA progress
-        cursor.execute("""
-            SELECT COUNT(*) as completed
-            FROM student_answers sa
-            JOIN progress_topics pt ON sa.topic_id = pt.topic_id
-            WHERE sa.student_id = ? AND pt.parent_topic = 'DSA'
-        """, (student_id,))
-        dsa_completed = cursor.fetchone()[0] or 0
-
-        cursor.execute("""
-            SELECT SUM(total_questions) as total
-            FROM progress_topics
-            WHERE parent_topic = 'DSA'
-        """)
-        dsa_total = cursor.fetchone()[0] or 0
-
-        # Get Communication progress
-        cursor.execute("""
-            SELECT COUNT(*) as completed
-            FROM student_answers sa
-            JOIN progress_topics pt ON sa.topic_id = pt.topic_id
-            WHERE sa.student_id = ? AND pt.parent_topic = 'Communication'
-        """, (student_id,))
-        comm_completed = cursor.fetchone()[0] or 0
-
-        cursor.execute("""
-            SELECT SUM(total_questions) as total
-            FROM progress_topics
-            WHERE parent_topic = 'Communication'
-        """)
-        comm_total = cursor.fetchone()[0] or 0
-
-        # Get Aptitude progress
-        cursor.execute("""
-            SELECT COUNT(*) as completed
-            FROM student_answers sa
-            JOIN progress_topics pt ON sa.topic_id = pt.topic_id
-            WHERE sa.student_id = ? AND pt.parent_topic = 'Aptitude'
-        """, (student_id,))
-        apti_completed = cursor.fetchone()[0] or 0
-
-        cursor.execute("""
-            SELECT SUM(total_questions) as total
-            FROM progress_topics
-            WHERE parent_topic = 'Aptitude'
-        """)
-        apti_total = cursor.fetchone()[0] or 0
-
-        progress_dict = {
-            "DSA": (dsa_completed / dsa_total * 100) if dsa_total > 0 else 0,
-            "Communication": (comm_completed / comm_total * 100) if comm_total > 0 else 0,
-            "Aptitude": (apti_completed / apti_total * 100) if apti_total > 0 else 0
+        print(f"Fetching progress for student_id: {student_id}")
+        
+        # Get all topics
+        cursor.execute("SELECT topic_id, parent_topic, total_questions FROM progress_topics")
+        topics = cursor.fetchall()
+        
+        if not topics:
+            return {
+                'success': True,
+                'DSA': 0,
+                'Communication': 0,
+                'Aptitude': 0
+            }
+            
+        # Initialize counters
+        completed_by_category = {'DSA': 0, 'Communication': 0, 'Aptitude': 0}
+        total_by_category = {'DSA': 0, 'Communication': 0, 'Aptitude': 0}
+        
+        # Count completed questions by category
+        for topic in topics:
+            topic_id, parent_topic, total_questions = topic
+            total_by_category[parent_topic] += total_questions
+            
+            cursor.execute("""
+                SELECT COUNT(*) FROM student_answers 
+                WHERE student_id = ? AND topic_id = ? AND is_correct = 1
+            """, (student_id, topic_id))
+            
+            completed = cursor.fetchone()[0]
+            completed_by_category[parent_topic] += completed
+            
+        print(f"Completed by Category: {completed_by_category}")
+        print(f"Total by Category: {total_by_category}")
+        
+        # Calculate progress percentages
+        progress_data = {}
+        for category in completed_by_category:
+            if total_by_category[category] > 0:
+                progress = (completed_by_category[category] / total_by_category[category]) * 100
+                progress_data[category] = round(progress, 2)
+            else:
+                progress_data[category] = 0
+                
+        print(f"Calculated Progress Data: {progress_data}")
+        
+        return {
+            'success': True,
+            **progress_data
         }
-
-        print("Progress Data:", progress_dict)  # Debug print
-        return progress_dict
-
+        
     except Exception as e:
-        print(f"Error in get_student_progress: {e}")
-        return {}
+        traceback.print_exc()
+        return {'success': False, 'message': str(e)}
     finally:
         if 'db' in locals():
             db.close()
@@ -325,42 +318,54 @@ def update_progress():
             1 if completed_questions >= topic_total else 0
         ))
 
-        # Update overall DSA progress
-        cursor.execute("""
-            SELECT SUM(total_questions) 
-            FROM progress_topics 
-            WHERE parent_topic = 'DSA'
-        """)
-        total_dsa_questions = cursor.fetchone()[0]
+        # Get parent topic for the current topic
+        cursor.execute("SELECT parent_topic FROM progress_topics WHERE topic_id = ?", (topic_id,))
+        parent_topic = cursor.fetchone()[0]
 
-        cursor.execute("""
-            SELECT COUNT(*) 
-            FROM student_answers sa
-            JOIN progress_topics pt ON sa.topic_id = pt.topic_id
-            WHERE sa.student_id = ? AND pt.parent_topic = 'DSA'
-        """, (student_id,))
-        completed_dsa_questions = cursor.fetchone()[0]
+        # For DSA topics only, update the dsa_overall_progress table if it exists
+        if parent_topic == 'DSA':
+            try:
+                # Calculate DSA progress
+                cursor.execute("""
+                    SELECT SUM(total_questions) 
+                    FROM progress_topics 
+                    WHERE parent_topic = 'DSA'
+                """)
+                total_dsa_questions = cursor.fetchone()[0] or 0
 
-        # Update or insert overall DSA progress
-        cursor.execute("""
-            INSERT OR REPLACE INTO dsa_overall_progress 
-            (student_id, completed_questions, total_questions, is_completed, last_updated)
-            VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
-        """, (
-            student_id, 
-            completed_dsa_questions, 
-            total_dsa_questions,
-            1 if completed_dsa_questions >= total_dsa_questions else 0
-        ))
+                cursor.execute("""
+                    SELECT COUNT(*) 
+                    FROM student_answers sa
+                    JOIN progress_topics pt ON sa.topic_id = pt.topic_id
+                    WHERE sa.student_id = ? AND pt.parent_topic = 'DSA'
+                """, (student_id,))
+                completed_dsa_questions = cursor.fetchone()[0] or 0
+
+                # Update DSA progress if table exists
+                cursor.execute("""
+                    INSERT OR REPLACE INTO dsa_overall_progress 
+                    (student_id, completed_questions, total_questions, is_completed, last_updated)
+                    VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+                """, (
+                    student_id, 
+                    completed_dsa_questions, 
+                    total_dsa_questions,
+                    1 if completed_dsa_questions >= total_dsa_questions else 0
+                ))
+            except sqlite3.OperationalError as e:
+                # If the dsa_overall_progress table doesn't exist, just log and continue
+                print(f"Note: DSA progress table not updated - {e}")
+                pass
 
         db.commit()
         print("✅ Successfully updated progress!")
+
+        # Return the updated progress without accessing aptitude_overall_progress
         return jsonify({
             'success': True,
             'topic_progress': completed_questions,
             'total_topic_questions': topic_total,
-            'dsa_progress': completed_dsa_questions,
-            'total_dsa_questions': total_dsa_questions
+            'updated_category': parent_topic
         })
 
     except Exception as e:
@@ -456,7 +461,7 @@ def student_dashboard():
         return jsonify({'success': False, 'message': 'Student not found'}), 404
 
     student_id = result[0]
-    print(f"✅ Found student ID: {student_id}")
+    print(f"✅ Found student ID: {student_id}")  # Corrected student ID print statement
 
     # ✅ Replace usn with student_id
     cursor.execute("""
@@ -904,60 +909,889 @@ def dsa_bit_manipulation():
 def notifications():
     return render_template('base/notifications.html')
 
+@app.route('/technical_interview')
+def technical_interview():
+    return render_template('interview/technical_interview.html')    
+
+@app.route('/hr_interview')
+def hr_interview():
+    return render_template('interview/hr_interview.html')
+
 @app.route('/mark_complete', methods=['POST'])
 def mark_complete():
+    if 'user_id' not in session:
+        print("User not logged in")
+        return jsonify({"status": "error", "message": "Not logged in"}), 401
+        
     data = request.json
-    user_id = data.get('user_id')
     topic_id = data.get('topic_id')
     problem_id = data.get('problem_id')
-
-    if not all([user_id, topic_id, problem_id]):
+    
+    if not all([topic_id, problem_id]):
         return jsonify({"status": "error", "message": "Invalid data"}), 400
 
-    retries = 5
-    while retries > 0:
-        try:
-            db = get_db_connection()
-            cursor = db.cursor()
+    try:
+        db = get_db_connection()
+        cursor = db.cursor()
 
-            # Check if the progress already exists
+        # Get student ID from user_id
+        cursor.execute("SELECT id FROM students WHERE user_id = ?", (session['user_id'],))
+        result = cursor.fetchone()
+        if not result:
+            print("🚨 No student found for user_id")
+            return jsonify({'status': 'error', 'message': 'Student not found'}), 404
+
+        student_id = result[0]
+        print(f"✅ Found student ID: {student_id} for problem {problem_id} in topic {topic_id}")
+
+        # Convert problem_id to string if it's not already
+        problem_id_str = str(problem_id)
+        
+        # Create question_id from problem_id
+        if ('-' in problem_id_str):
+            try:
+                question_id = int(problem_id_str.split('-')[-1])
+            except (ValueError, IndexError):
+                question_id = 1
+        else:
+            # If no hyphen, just use the number as is or default to 1
+            try:
+                question_id = int(problem_id_str)
+            except ValueError:
+                question_id = 1
+        
+        print(f"✅ Converted problem ID '{problem_id}' to question ID '{question_id}'")
+        
+        # First check if this answer is already recorded
+        cursor.execute("""
+            SELECT * FROM student_answers 
+            WHERE student_id = ? AND topic_id = ? AND question_id = ?
+        """, (student_id, topic_id, question_id))
+        
+        if not cursor.fetchone():
+            # Insert into student_answers table
             cursor.execute("""
-                SELECT * FROM aptitude_progress 
-                WHERE user_id = ? AND topic_id = ? AND problem_id = ?
-            """, (user_id, topic_id, problem_id))
-            progress = cursor.fetchone()
-
-            if progress:
-                # Update the existing progress
+                INSERT INTO student_answers 
+                (student_id, question_id, topic_id, given_answer, is_correct) 
+                VALUES (?, ?, ?, 'completed', 1)
+            """, (student_id, question_id, topic_id))
+            
+            print(f"✅ Inserted into student_answers: student_id={student_id}, question_id={question_id}, topic_id={topic_id}")
+        
+        # Get parent topic for the current topic
+        cursor.execute("SELECT parent_topic FROM progress_topics WHERE topic_id = ?", (topic_id,))
+        topic_result = cursor.fetchone()
+        parent_topic = topic_result[0] if topic_result else 'Unknown'
+        
+        # Update specific progress based on the parent topic
+        if parent_topic == 'Aptitude':
+            # Check if aptitude_progress table has a student_id column
+            try:
+                cursor.execute("PRAGMA table_info(aptitude_progress)")
+                columns = [row['name'] for row in cursor.fetchall()]
+                
+                if 'student_id' in columns:
+                    # Table has student_id column, use it
+                    cursor.execute("""
+                        INSERT OR REPLACE INTO aptitude_progress 
+                        (student_id, problem_id, is_completed) 
+                        VALUES (?, ?, 1)
+                    """, (student_id, problem_id))
+                    print(f"✅ Inserted into aptitude_progress with student_id: {student_id}, problem_id={problem_id}")
+                elif 'user_id' in columns:
+                    # Table has user_id column instead, use that
+                    cursor.execute("""
+                        INSERT OR REPLACE INTO aptitude_progress 
+                        (user_id, problem_id, is_completed) 
+                        VALUES (?, ?, 1)
+                    """, (session['user_id'], problem_id))
+                    print(f"✅ Inserted into aptitude_progress with user_id: {session['user_id']}, problem_id={problem_id}")
+                else:
+                    print("⚠️ aptitude_progress table has neither student_id nor user_id column, skipping this update")
+            except Exception as e:
+                print(f"⚠️ Error updating aptitude_progress: {e}")
+                # Continue with the function even if this part fails
+        
+        elif parent_topic == 'Communication':
+            # Check if communication_progress table exists and has appropriate columns
+            try:
+                # First try to create the table if it doesn't exist
                 cursor.execute("""
-                    UPDATE aptitude_progress 
-                    SET status = ?, updated_at = ? 
-                    WHERE user_id = ? AND topic_id = ? AND problem_id = ?
-                """, ('completed', datetime.now(timezone.utc), user_id, topic_id, problem_id))
-            else:
-                # Insert new progress
+                    CREATE TABLE IF NOT EXISTS communication_progress (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        student_id INTEGER,
+                        user_id INTEGER,
+                        problem_id TEXT NOT NULL,
+                        is_completed INTEGER DEFAULT 0,
+                        UNIQUE(problem_id, student_id)
+                    )
+                """)
+                
+                cursor.execute("PRAGMA table_info(communication_progress)")
+                columns = [row['name'] for row in cursor.fetchall()]
+                
+                if 'student_id' in columns:
+                    # Table has student_id column, use it
+                    cursor.execute("""
+                        INSERT OR REPLACE INTO communication_progress 
+                        (student_id, problem_id, is_completed) 
+                        VALUES (?, ?, 1)
+                    """, (student_id, problem_id))
+                    print(f"✅ Inserted into communication_progress with student_id: {student_id}, problem_id={problem_id}")
+                elif 'user_id' in columns:
+                    # Table has user_id column instead, use that
+                    cursor.execute("""
+                        INSERT OR REPLACE INTO communication_progress 
+                        (user_id, problem_id, is_completed) 
+                        VALUES (?, ?, 1)
+                    """, (session['user_id'], problem_id))
+                    print(f"✅ Inserted into communication_progress with user_id: {session['user_id']}, problem_id={problem_id}")
+                else:
+                    print("⚠️ communication_progress table has neither student_id nor user_id column, skipping this update")
+            except Exception as e:
+                print(f"⚠️ Error updating communication_progress: {e}")
+                # Continue with the function even if this part fails
+        
+        # Get total questions for current topic
+        cursor.execute("SELECT total_questions FROM progress_topics WHERE topic_id = ?", (topic_id,))
+        topic_result = cursor.fetchone()
+        topic_total = topic_result[0] if topic_result else 10
+        
+        # Get count of completed questions for this topic
+        cursor.execute("""
+            SELECT COUNT(*) FROM student_answers
+            WHERE student_id = ? AND topic_id = ? AND is_correct = 1
+        """, (student_id, topic_id))
+        completed_questions = cursor.fetchone()[0]
+        
+        print(f"✅ Topic {topic_id}: {completed_questions} of {topic_total} completed")
+        
+        # Update student_progress table
+        cursor.execute("""
+            INSERT OR REPLACE INTO student_progress 
+            (student_id, topic_id, completed_questions, total_questions, is_completed) 
+            VALUES (?, ?, ?, ?, ?)
+        """, (
+            student_id, 
+            topic_id, 
+            completed_questions, 
+            topic_total, 
+            1 if completed_questions >= topic_total else 0
+        ))
+        
+        # Update category-specific overall progress
+        if parent_topic == 'Aptitude':
+            try:
+                # Calculate Aptitude progress
                 cursor.execute("""
-                    INSERT INTO aptitude_progress (user_id, topic_id, problem_id, status, updated_at) 
-                    VALUES (?, ?, ?, ?, ?)
-                """, (user_id, topic_id, problem_id, 'completed', datetime.now(timezone.utc)))
+                    SELECT SUM(total_questions) 
+                    FROM progress_topics 
+                    WHERE parent_topic = 'Aptitude'
+                """)
+                total_aptitude_questions = cursor.fetchone()[0] or 10
 
-            db.commit()
-            return jsonify({"status": "success"})
-        except sqlite3.OperationalError as e:
-            if "database is locked" in str(e):
-                retries -= 1
-                time.sleep(1)  # Wait for 1 second before retrying
-            else:
-                print(f"Error updating progress: {e}")
-                return jsonify({"status": "error", "message": str(e)}), 500
+                cursor.execute("""
+                    SELECT COUNT(*) 
+                    FROM student_answers sa
+                    JOIN progress_topics pt ON sa.topic_id = pt.topic_id
+                    WHERE sa.student_id = ? AND pt.parent_topic = 'Aptitude'
+                """, (student_id,))
+                completed_aptitude_questions = cursor.fetchone()[0] or 0
+
+                # Update Aptitude progress
+                cursor.execute("""
+                    INSERT OR REPLACE INTO aptitude_overall_progress 
+                    (student_id, completed_questions, total_questions, is_completed, last_updated)
+                    VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+                """, (
+                    student_id, 
+                    completed_aptitude_questions, 
+                    total_aptitude_questions,
+                    1 if completed_aptitude_questions >= total_aptitude_questions else 0
+                ))
+            except Exception as e:
+                print(f"⚠️ Note: Could not update aptitude overall progress - {e}")
+        
+        elif parent_topic == 'Communication':
+            try:
+                # Calculate Communication progress
+                cursor.execute("""
+                    SELECT SUM(total_questions) 
+                    FROM progress_topics 
+                    WHERE parent_topic = 'Communication'
+                """)
+                total_comm_questions = cursor.fetchone()[0] or 10
+
+                cursor.execute("""
+                    SELECT COUNT(*) 
+                    FROM student_answers sa
+                    JOIN progress_topics pt ON sa.topic_id = pt.topic_id
+                    WHERE sa.student_id = ? AND pt.parent_topic = 'Communication'
+                """, (student_id,))
+                completed_comm_questions = cursor.fetchone()[0] or 0
+
+                # Update Communication progress
+                cursor.execute("""
+                    INSERT OR REPLACE INTO communication_overall_progress 
+                    (student_id, completed_questions, total_questions, is_completed, last_updated)
+                    VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+                """, (
+                    student_id, 
+                    completed_comm_questions, 
+                    total_comm_questions,
+                    1 if completed_comm_questions >= total_comm_questions else 0
+                ))
+            except Exception as e:
+                print(f"⚠️ Note: Could not update communication overall progress - {e}")
+        
+        elif parent_topic == 'DSA':
+            try:
+                # Calculate DSA progress
+                cursor.execute("""
+                    SELECT SUM(total_questions) 
+                    FROM progress_topics 
+                    WHERE parent_topic = 'DSA'
+                """)
+                total_dsa_questions = cursor.fetchone()[0] or 10
+
+                cursor.execute("""
+                    SELECT COUNT(*) 
+                    FROM student_answers sa
+                    JOIN progress_topics pt ON sa.topic_id = pt.topic_id
+                    WHERE sa.student_id = ? AND pt.parent_topic = 'DSA'
+                """, (student_id,))
+                completed_dsa_questions = cursor.fetchone()[0] or 0
+
+                # Update DSA progress
+                cursor.execute("""
+                    INSERT OR REPLACE INTO dsa_overall_progress 
+                    (student_id, completed_questions, total_questions, is_completed, last_updated)
+                    VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+                """, (
+                    student_id, 
+                    completed_dsa_questions, 
+                    total_dsa_questions,
+                    1 if completed_dsa_questions >= total_dsa_questions else 0
+                ))
+            except Exception as e:
+                print(f"⚠️ Note: Could not update DSA overall progress - {e}")
+        
+        db.commit()
+        print("✅ Successfully updated progress!")
+        
+        # Return updated progress information
+        return jsonify({
+            "status": "success",
+            "completed": completed_questions,
+            "total": topic_total,
+            "percent": round((completed_questions / topic_total) * 100) if topic_total > 0 else 0,
+            "topic_id": topic_id,
+            "parent_topic": parent_topic
+        })
+        
+    except Exception as e:
+        traceback.print_exc()
+        print(f"Error in mark_complete: {e}")
+        if 'db' in locals():
+            db.rollback()
+        return jsonify({"status": "error", "message": str(e)}), 500
+    finally:
+        if 'db' in locals():
+            db.close()
+
+@app.route('/debug_progress')
+def debug_progress():
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not logged in'})
+    
+    try:
+        db = get_db_connection()
+        cursor = db.cursor()
+        
+        # Get student ID
+        cursor.execute("SELECT id FROM students WHERE user_id = ?", (session['user_id'],))
+        result = cursor.fetchone()
+        if not result:
+            return jsonify({'error': 'Student not found'})
+        
+        student_id = result[0]
+        
+        # Get all tables
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        tables = [row[0] for row in cursor.fetchall()]
+        
+        # Get topic information
+        cursor.execute("SELECT * FROM progress_topics")
+        topics = [dict(row) for row in cursor.fetchall()]
+        
+        # Get student answers
+        cursor.execute("""
+            SELECT sa.*, pt.parent_topic, pt.topic_name
+            FROM student_answers sa
+            JOIN progress_topics pt ON sa.topic_id = pt.topic_id
+            WHERE sa.student_id = ?
+        """, (student_id,))
+        answers = [dict(row) for row in cursor.fetchall()]
+        
+        # Get aptitude progress
+        cursor.execute("SELECT * FROM aptitude_progress WHERE student_id = ?", (student_id,))
+        aptitude_progress = [dict(row) for row in cursor.fetchall()]
+        
+        # Get student_progress
+        cursor.execute("""
+            SELECT sp.*, pt.parent_topic, pt.topic_name
+            FROM student_progress sp
+            JOIN progress_topics pt ON sp.topic_id = pt.topic_id
+            WHERE sp.student_id = ?
+        """, (student_id,))
+        progress = [dict(row) for row in cursor.fetchall()]
+        
+        # Return all the collected data
+        return jsonify({
+            'success': True,
+            'student_id': student_id,
+            'tables': tables,
+            'topics': topics,
+            'answers': answers,
+            'aptitude_progress': aptitude_progress,
+            'student_progress': progress,
+            'progress_summary': get_student_progress()
+        })
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({'error': str(e)})
+    finally:
+        if 'db' in locals():
+            db.close()
+
+@app.route('/init_mock_progress')
+def init_mock_progress():
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'Not logged in'}), 401
+        
+    try:
+        db = get_db_connection()
+        cursor = db.cursor()
+        
+        # Get student ID
+        cursor.execute("SELECT id FROM students WHERE user_id = ?", (session['user_id'],))
+        result = cursor.fetchone()
+        if not result:
+            return jsonify({'success': False, 'message': 'Student not found'}), 404
+            
+        student_id = result[0]
+        
+        # Check if progress_topics exists and has aptitude topics
+        cursor.execute("SELECT COUNT(*) FROM progress_topics WHERE parent_topic = 'Aptitude'")
+        aptitude_topic_count = cursor.fetchone()[0]
+        
+        if aptitude_topic_count == 0:
+            # Create some aptitude topics if none exist
+            cursor.execute("""
+                INSERT OR IGNORE INTO progress_topics 
+                (topic_id, topic_name, parent_topic, description, total_questions) 
+                VALUES 
+                (101, 'Time and Work', 'Aptitude', 'Problems related to time and work', 10),
+                (102, 'Percentages', 'Aptitude', 'Percentage calculations', 10),
+                (103, 'Probability', 'Aptitude', 'Probability problems', 10)
+            """)
+            
+        # Check if communication topics exist
+        cursor.execute("SELECT COUNT(*) FROM progress_topics WHERE parent_topic = 'Communication'")
+        comm_topic_count = cursor.fetchone()[0]
+        
+        if comm_topic_count == 0:
+            # Create some communication topics if none exist
+            cursor.execute("""
+                INSERT OR IGNORE INTO progress_topics 
+                (topic_id, topic_name, parent_topic, description, total_questions) 
+                VALUES 
+                (201, 'Verbal Skills', 'Communication', 'Verbal communication', 10),
+                (202, 'Writing Skills', 'Communication', 'Written communication', 10),
+                (203, 'Presentation', 'Communication', 'Presentation skills', 10)
+            """)
+        
+        # Add some mock student answers for Aptitude topics
+        cursor.execute("""
+            INSERT OR IGNORE INTO student_answers 
+            (student_id, question_id, topic_id, given_answer, is_correct) 
+            VALUES 
+            (?, 1, 101, 'answer1', 1),
+            (?, 2, 101, 'answer2', 1),
+            (?, 3, 101, 'answer3', 1),
+            (?, 1, 102, 'answer1', 1),
+            (?, 2, 102, 'answer2', 1)
+        """, (student_id, student_id, student_id, student_id, student_id))
+        
+        # Add some mock student answers for Communication topics
+        cursor.execute("""
+            INSERT OR IGNORE INTO student_answers 
+            (student_id, question_id, topic_id, given_answer, is_correct) 
+            VALUES 
+            (?, 1, 201, 'answer1', 1),
+            (?, 2, 201, 'answer2', 1),
+            (?, 3, 201, 'answer3', 1),
+            (?, 1, 202, 'answer1', 1)
+        """, (student_id, student_id, student_id, student_id))
+        
+        db.commit()
+        
+        # Return the current progress after initialization
+        return jsonify({
+            'success': True,
+            'message': 'Mock data initialized',
+            'progress': get_student_progress()
+        })
+        
+    except Exception as e:
+        if db:
+            db.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
+    finally:
+        if db:
+            db.close()
+
+@app.route('/fix_db_schema')
+def fix_db_schema():
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'Not logged in'}), 401
+        
+    try:
+        db = get_db_connection()
+        cursor = db.cursor()
+        
+        # Get all tables
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        tables = [row[0] for row in cursor.fetchall()]
+        
+        # Check and create progress_topics table if needed
+        if 'progress_topics' not in tables:
+            cursor.execute("""
+                CREATE TABLE progress_topics (
+                    topic_id INTEGER PRIMARY KEY,
+                    topic_name TEXT NOT NULL,
+                    parent_topic TEXT NOT NULL,
+                    description TEXT,
+                    total_questions INTEGER DEFAULT 10
+                )
+            """)
+            
+        # Check and create student_answers table if needed
+        if 'student_answers' not in tables:
+            cursor.execute("""
+                CREATE TABLE student_answers (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    student_id INTEGER NOT NULL,
+                    question_id INTEGER NOT NULL,
+                    topic_id INTEGER NOT NULL,
+                    given_answer TEXT,
+                    is_correct INTEGER DEFAULT 0,
+                    UNIQUE(student_id, question_id, topic_id)
+                )
+            """)
+            
+        # Check and create student_progress table if needed
+        if 'student_progress' not in tables:
+            cursor.execute("""
+                CREATE TABLE student_progress (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    student_id INTEGER NOT NULL,
+                    topic_id INTEGER NOT NULL,
+                    completed_questions INTEGER DEFAULT 0,
+                    total_questions INTEGER DEFAULT 10,
+                    is_completed INTEGER DEFAULT 0,
+                    UNIQUE(student_id, topic_id)
+                )
+            """)
+            
+        # Check and create aptitude_progress table if needed
+        if 'aptitude_progress' not in tables:
+            cursor.execute("""
+                CREATE TABLE aptitude_progress (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    student_id INTEGER NOT NULL,
+                    problem_id TEXT NOT NULL,
+                    is_completed INTEGER DEFAULT 0,
+                    UNIQUE(student_id, problem_id)
+                )
+            """)
+        else:
+            # Fix aptitude_progress schema if it has a user_id column instead of student_id
+            cursor.execute("PRAGMA table_info(aptitude_progress)")
+            columns = [row['name'] for row in cursor.fetchall()]
+            
+            if 'user_id' in columns and 'student_id' not in columns:
+                # Create a new table with correct schema
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS aptitude_progress_new (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        student_id INTEGER NOT NULL,
+                        problem_id TEXT NOT NULL,
+                        is_completed INTEGER DEFAULT 0,
+                        UNIQUE(student_id, problem_id)
+                    )
+                """)
+                
+                # Get student_id for each user_id and copy data
+                cursor.execute("SELECT * FROM aptitude_progress")
+                rows = cursor.fetchall()
+                
+                for row in rows:
+                    cursor.execute("SELECT id FROM students WHERE user_id = ?", (row[1],))  # user_id is at index 1
+                    student = cursor.fetchone()
+                    if student:
+                        cursor.execute("""
+                            INSERT OR IGNORE INTO aptitude_progress_new 
+                            (student_id, problem_id, is_completed) 
+                            VALUES (?, ?, ?)
+                        """, (student[0], row[2], row[3]))  # problem_id at index 2, is_completed at index 3
+                
+                # Drop old table and rename new one
+                cursor.execute("DROP TABLE aptitude_progress")
+                cursor.execute("ALTER TABLE aptitude_progress_new RENAME TO aptitude_progress")
+        
+        # Add default topics if empty
+        cursor.execute("SELECT COUNT(*) FROM progress_topics")
+        topic_count = cursor.fetchone()[0]
+        
+        if topic_count == 0:
+            # Add some default topics for each category
+            cursor.execute("""
+                INSERT INTO progress_topics (topic_id, topic_name, parent_topic, description, total_questions)
+                VALUES
+                (1, 'Basic Programming', 'DSA', 'Basic programming concepts', 15),
+                (2, 'Arrays and Strings', 'DSA', 'Array and string manipulation', 12),
+                (3, 'Linked Lists', 'DSA', 'Linked list operations', 10),
+                (4, 'Stacks and Queues', 'DSA', 'Stack and queue implementations', 8),
+                
+                (101, 'Reading Comprehension', 'Communication', 'Reading and understanding passages', 50),
+                (102, 'Parajumbles', 'Communication', 'Sentence rearrangement', 50),
+                
+                (201, 'Bar Graphs', 'Aptitude', 'Bar graph interpretation', 50),
+                (202, 'Pie Charts', 'Aptitude', 'Pie chart analysis', 50),
+                (203, 'Line Graphs', 'Aptitude', 'Line graph interpretation', 50),
+                (204, 'Tabulation', 'Aptitude', 'Data table analysis', 50)
+            """)
+        
+        # Insert mock data for testing
+        student_id = None
+        cursor.execute("SELECT id FROM students WHERE user_id = ?", (session['user_id'],))
+        result = cursor.fetchone()
+        if result:
+            student_id = result[0]
+            
+            # Add some mock answers if none exist
+            cursor.execute("SELECT COUNT(*) FROM student_answers WHERE student_id = ?", (student_id,))
+            if cursor.fetchone()[0] == 0:
+                # Insert mock answers for each category
+                cursor.execute("""
+                    INSERT OR IGNORE INTO student_answers (student_id, question_id, topic_id, given_answer, is_correct)
+                    VALUES
+                    (?, 1, 1, 'answer1', 1),
+                    (?, 2, 1, 'answer2', 1),
+                    (?, 1, 2, 'answer1', 1),
+                    
+                    (?, 1, 101, 'answer1', 1),
+                    (?, 2, 101, 'answer2', 1),
+                    (?, 1, 102, 'answer1', 1),
+                    
+                    (?, 1, 201, 'answer1', 1),
+                    (?, 2, 201, 'answer2', 1),
+                    (?, 1, 202, 'answer1', 1)
+                """, (student_id,)*9)
+        
+        db.commit()
+        
+        # Return diagnostic information
+        return jsonify({
+            'success': True,
+            'message': 'Database schema verified and fixed',
+            'tables': tables,
+            'progress_data': get_student_progress()
+        })
+        
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': str(e)}), 500
+    finally:
+        if 'db' in locals():
+            db.close()
+
+@app.route('/fix_missing_tables')
+def fix_missing_tables():
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'Not logged in'}), 401
+        
+    try:
+        db = get_db_connection()
+        cursor = db.cursor()
+        
+        # Create the aptitude_overall_progress table if it doesn't exist
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS aptitude_overall_progress (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                student_id INTEGER NOT NULL,
+                completed_questions INTEGER DEFAULT 0,
+                total_questions INTEGER DEFAULT 0,
+                is_completed INTEGER DEFAULT 0,
+                last_updated TIMESTAMP,
+                UNIQUE(student_id)
+            )
+        """)
+        
+        # Create the dsa_overall_progress table if it doesn't exist
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS dsa_overall_progress (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                student_id INTEGER NOT NULL,
+                completed_questions INTEGER DEFAULT 0,
+                total_questions INTEGER DEFAULT 0,
+                is_completed INTEGER DEFAULT 0,
+                last_updated TIMESTAMP,
+                UNIQUE(student_id)
+            )
+        """)
+        
+        # Create the communication_overall_progress table if it doesn't exist
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS communication_overall_progress (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                student_id INTEGER NOT NULL,
+                completed_questions INTEGER DEFAULT 0,
+                total_questions INTEGER DEFAULT 0,
+                is_completed INTEGER DEFAULT 0,
+                last_updated TIMESTAMP,
+                UNIQUE(student_id)
+            )
+        """)
+        
+        db.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Missing tables created successfully'
+        })
+        
+    except Exception as e:
+        if db:
+            db.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
+    finally:
+        if db:
+            db.close()
+
+@app.route('/fix_aptitude_schema')
+def fix_aptitude_schema():
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'Not logged in'}), 401
+        
+    try:
+        db = get_db_connection()
+        cursor = db.cursor()
+        
+        # Check if aptitude_progress table exists
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='aptitude_progress'")
+        if not cursor.fetchone():
+            # Create the table with proper schema
+            cursor.execute("""
+                CREATE TABLE aptitude_progress (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER, 
+                    student_id INTEGER,
+                    problem_id TEXT NOT NULL,
+                    is_completed INTEGER DEFAULT 0,
+                    UNIQUE(problem_id, student_id)
+                )
+            """)
+            print("Created aptitude_progress table with both columns")
+        else:
+            # Check current schema
+            cursor.execute("PRAGMA table_info(aptitude_progress)")
+            columns = {row['name']: row for row in cursor.fetchall()}
+            
+            # Add missing columns if needed
+            if 'student_id' not in columns:
+                cursor.execute("ALTER TABLE aptitude_progress ADD COLUMN student_id INTEGER")
+                print("Added student_id column to aptitude_progress")
+                
+                # If user_id exists, populate student_id based on it
+                if 'user_id' in columns:
+                    cursor.execute("""
+                        UPDATE aptitude_progress 
+                        SET student_id = (
+                            SELECT id FROM students WHERE user_id = aptitude_progress.user_id
+                        )
+                        WHERE user_id IS NOT NULL
+                    """)
+                    print("Populated student_id values from user_id")
+            
+            if 'user_id' not in columns:
+                cursor.execute("ALTER TABLE aptitude_progress ADD COLUMN user_id INTEGER")
+                print("Added user_id column to aptitude_progress")
+        
+        db.commit()
+        
+        # Return the fixed schema info
+        cursor.execute("PRAGMA table_info(aptitude_progress)")
+        columns = [row['name'] for row in cursor.fetchall()]
+        
+        return jsonify({
+            'success': True,
+            'message': 'Aptitude progress table schema fixed',
+            'columns': columns
+        })
+        
+    except Exception as e:
+        traceback.print_exc()
+        if 'db' in locals():
+            db.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
+    finally:
+        if 'db' in locals():
+            db.close()
+
+@app.route('/fix_communication_schema')
+def fix_communication_schema():
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'Not logged in'}), 401
+        
+    try:
+        db = get_db_connection()
+        cursor = db.cursor()
+        
+        # Create the communication_overall_progress table if it doesn't exist
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS communication_overall_progress (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                student_id INTEGER NOT NULL,
+                completed_questions INTEGER DEFAULT 0,
+                total_questions INTEGER DEFAULT 0,
+                is_completed INTEGER DEFAULT 0,
+                last_updated TIMESTAMP,
+                UNIQUE(student_id)
+            )
+        """)
+        
+        # Also ensure we have a way to track individual communication exercises
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS communication_progress (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                student_id INTEGER,
+                user_id INTEGER,
+                problem_id TEXT NOT NULL,
+                is_completed INTEGER DEFAULT 0,
+                UNIQUE(problem_id, student_id)
+            )
+        """)
+        
+        # Check current schema of communication_progress
+        try:
+            cursor.execute("PRAGMA table_info(communication_progress)")
+            columns = {row['name']: row for row in cursor.fetchall()}
+            
+            # Add missing columns if needed
+            if 'student_id' not in columns:
+                cursor.execute("ALTER TABLE communication_progress ADD COLUMN student_id INTEGER")
+                print("Added student_id column to communication_progress")
+                
+                # If user_id exists, populate student_id based on it
+                if 'user_id' in columns:
+                    cursor.execute("""
+                        UPDATE communication_progress 
+                        SET student_id = (
+                            SELECT id FROM students WHERE user_id = communication_progress.user_id
+                        )
+                        WHERE user_id IS NOT NULL
+                    """)
+                    print("Populated student_id values from user_id")
+            
+            if 'user_id' not in columns:
+                cursor.execute("ALTER TABLE communication_progress ADD COLUMN user_id INTEGER")
+                print("Added user_id column to communication_progress")
         except Exception as e:
-            print(f"Unexpected error: {e}")
-            return jsonify({"status": "error", "message": str(e)}), 500
-        finally:
-            if db:
-                db.close()
+            print(f"Error checking communication_progress schema: {e}")
+            # Table doesn't exist yet, will be created earlier
+        
+        db.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Communication progress tables created/fixed successfully'
+        })
+        
+    except Exception as e:
+        traceback.print_exc()
+        if 'db' in locals():
+            db.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
+    finally:
+        if 'db' in locals():
+            db.close()
 
-    return jsonify({"status": "error", "message": "Failed to update progress after multiple retries"}), 500
+@app.route('/get_communication_progress')
+def get_communication_progress():
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'Not logged in'}), 401
+    
+    try:
+        db = get_db_connection()
+        cursor = db.cursor()
+        
+        # Get student ID from user_id
+        cursor.execute("SELECT id FROM students WHERE user_id = ?", (session['user_id'],))
+        result = cursor.fetchone()
+        if not result:
+            return jsonify({'success': False, 'message': 'Student not found'}), 404
+        
+        student_id = result[0]
+        
+        # Create the communication_progress table if it doesn't exist
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS communication_progress (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                student_id INTEGER,
+                user_id INTEGER,
+                problem_id TEXT NOT NULL,
+                is_completed INTEGER DEFAULT 0,
+                UNIQUE(problem_id, student_id)
+            )
+        """)
+        
+        # Get individual communication exercises progress
+        cursor.execute("""
+            SELECT problem_id, is_completed 
+            FROM communication_progress 
+            WHERE student_id = ?
+        """, (student_id,))
+        
+        progress = {row[0]: bool(row[1]) for row in cursor.fetchall()}
+        
+        # Get overall communication progress
+        cursor.execute("""
+            SELECT SUM(completed_questions) as completed, SUM(total_questions) as total
+            FROM student_progress sp
+            JOIN progress_topics pt ON sp.topic_id = pt.topic_id
+            WHERE sp.student_id = ? AND pt.parent_topic = 'Communication'
+        """, (student_id,))
+        
+        overall = cursor.fetchone()
+        overall_progress = {
+            'completed': overall[0] or 0,
+            'total': overall[1] or 0
+        }
+        
+        return jsonify({
+            'success': True,
+            'progress': progress,
+            'overall_progress': overall_progress
+        })
+        
+    except Exception as e:
+        print(f"Error fetching communication progress: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+    finally:
+        if db:
+            db.close()
 
 if __name__ == '__main__':
     app.run(debug=True)
