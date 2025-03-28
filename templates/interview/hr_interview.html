@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HR Interview Platform</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa;
+        }
+        .question-card {
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .question-card:hover {
+            transform: scale(1.05);
+        }
+        .progress-bar {
+            height: 20px;
+        }
+        .feedback-section {
+            display: none;
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .loading-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+        .loading-message {
+            margin-top: 1rem;
+            font-size: 1.2rem;
+        }
+        .processing-status {
+            width: 100%;
+            max-width: 400px;
+            margin-top: 1rem;
+        }
+        .questions-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container my-5">
+        <h1 class="text-center mb-4">HR Interview Platform</h1>
+
+        <!-- Question Selection Section -->
+        <div id="question-selection" class="mb-5">
+            <h3>Select a Question</h3>
+            <div class="questions-container" id="questions-container">
+                <!-- Questions will be dynamically rendered here -->
+            </div>
+        </div>
+
+        <!-- Recording Interface Section -->
+        <div id="recording-interface" class="mb-5" style="display: none;">
+            <h3>Recording Your Answer</h3>
+            <p id="selected-question"></p>
+            <div class="mb-3">
+                <div class="text-center p-5 border rounded bg-light">
+                    <i class="fas fa-microphone fa-4x"></i>
+                    <p class="mt-3">Recording audio only...</p>
+                </div>
+            </div>
+            <div class="progress mb-3">
+                <div class="progress-bar bg-success" role="progressbar" style="width: 0%;" id="progress-bar"></div>
+            </div>
+            <button class="btn btn-danger" onclick="stopRecording()">Stop Recording</button>
+            <button class="btn btn-secondary" onclick="replayRecording()">Replay</button>
+        </div>
+
+        <!-- Transcription Review Section -->
+        <div id="transcription-review" class="mb-5 fade-in" style="display: none;">
+            <h3>Review Your Response</h3>
+            <div class="card p-3 mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h5>Your Transcribed Answer</h5>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="manual-edit-switch" onchange="toggleManualEdit()">
+                        <label class="form-check-label" for="manual-edit-switch">Edit manually</label>
+                    </div>
+                </div>
+                <div id="transcription-container">
+                    <div id="transcribed-text" class="p-3 border rounded bg-light" style="max-height: 300px; overflow-y: auto;">
+                        Loading transcription...
+                    </div>
+                    <div id="manual-edit-container" style="display: none;">
+                        <textarea id="manual-transcription" class="form-control" rows="8" placeholder="Enter your response here if the automatic transcription failed..."></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="d-flex justify-content-between mt-3">
+                <button class="btn btn-secondary" onclick="rerecordAnswer()">Record Again</button>
+                <button class="btn btn-primary" onclick="submitAnalysis()">Submit for Analysis</button>
+            </div>
+        </div>
+
+        <!-- Loading Section with Better Feedback -->
+        <div id="loading" class="loading-container" style="display: none;">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="loading-message">Analyzing your response...</p>
+            <div class="progress processing-status">
+                <div class="progress-bar progress-bar-striped progress-bar-animated" id="analysis-progress" role="progressbar" style="width: 0%"></div>
+            </div>
+            <p id="status-message" class="mt-2">Initializing analysis...</p>
+        </div>
+
+        <!-- AI Review & Feedback Section -->
+        <div id="feedback-section" class="feedback-section fade-in">
+            <h3>AI Review & Feedback</h3>
+            <div class="card p-3 mb-3">
+                <h5>Audio Answer</h5>
+                <audio id="audio-answer" controls>
+                    <source id="audio-source" src="" type="audio/webm">
+                    Your browser does not support the audio element.
+                </audio>
+            </div>
+            <div class="card p-3 mb-3">
+                <h5>Content Accuracy</h5>
+                <p id="accuracy-feedback">Your answer was 85% accurate.</p>
+            </div>
+            <div class="card p-3 mb-3">
+                <h5>Key Points Covered</h5>
+                <ul id="key-points-list">
+                    <li>You introduced yourself clearly</li>
+                    <li>You mentioned relevant experience</li>
+                </ul>
+            </div>
+            <div class="card p-3 mb-3">
+                <h5>Missing Points</h5>
+                <ul id="missing-points-list">
+                    <li>Consider adding quantifiable achievements</li>
+                    <li>Mention specific technologies relevant to the role</li>
+                </ul>
+            </div>
+            <div class="card p-3 mb-3">
+                <h5>Speaking Clarity</h5>
+                <p id="clarity-feedback">Your speech was clear, but try to reduce filler words.</p>
+            </div>
+            <div class="card p-3">
+                <h5>Improvement Tips</h5>
+                <ul id="improvement-tips">
+                    <li>Practice maintaining eye contact with the camera.</li>
+                    <li>Structure your answers more concisely.</li>
+                </ul>
+            </div>
+            <div class="text-center mt-3">
+                <button class="btn btn-primary" onclick="backToQuestions()">Try Another Question</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let timer;
+        let progress = 0;
+        let analysisTimer;
+        let currentAnalysisId = null;
+        let mediaRecorder = null;
+        let recordedChunks = [];
+        let audioContext = null;
+        let audioRecorder = null;
+        let audioChunks = [];
+
+        const questions = [
+            { id: 1, text: "Tell me about yourself.", type: "HR" },
+            { id: 2, text: "What are your strengths and weaknesses?", type: "HR" },
+            { id: 3, text: "Why do you want to work here?", type: "HR" },
+            { id: 4, text: "Describe a situation where you had to deal with a difficult coworker.", type: "HR" },
+            { id: 5, text: "What are your career goals for the next five years?", type: "HR" },
+            { id: 6, text: "Tell me about a time you failed at something and what you learned.", type: "HR" }
+        ];
+
+        function renderQuestions() {
+            const questionContainer = document.getElementById('questions-container');
+            questionContainer.innerHTML = ''; // Clear existing questions
+            
+            questions.forEach(question => {
+                if (question.type === "HR") {
+                    const card = document.createElement('div');
+                    card.className = 'card question-card p-3';
+                    card.innerHTML = `
+                        <h5>${question.text}</h5>
+                        <p class="text-muted">${getQuestionDifficulty(question.id)}</p>
+                        <button class="btn btn-outline-primary btn-sm mt-2" onclick="selectQuestion('${question.text}')">
+                            Select Question
+                        </button>
+                    `;
+                    questionContainer.appendChild(card);
+                }
+            });
+        }
+        
+        function getQuestionDifficulty(id) {
+            // Assign difficulty based on question ID
+            if (id <= 2) return "Basic Level";
+            if (id <= 4) return "Intermediate Level";
+            return "Advanced Level";
+        }
+
+        function selectQuestion(question) {
+            document.getElementById('question-selection').style.display = 'none';
+            document.getElementById('recording-interface').style.display = 'block';
+            document.getElementById('selected-question').innerText = question;
+            startRecording();
+        }
+
+        function startRecording() {
+            progress = 0;
+            document.getElementById('progress-bar').style.width = '0%';
+            audioChunks = [];
+            
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(stream => {
+                    // Set up audio recording
+                    audioRecorder = new MediaRecorder(stream);
+                    audioRecorder.ondataavailable = (e) => {
+                        if (e.data.size > 0) {
+                            audioChunks.push(e.data);
+                        }
+                    };
+                    audioRecorder.start();
+                })
+                .catch(err => console.error('Error accessing media devices.', err));
+
+            timer = setInterval(() => {
+                progress += 2;
+                document.getElementById('progress-bar').style.width = progress + '%';
+                if (progress >= 100) stopRecording();
+            }, 1000);
+        }
+
+        function stopRecording() {
+            clearInterval(timer);
+            
+            if (audioRecorder && audioRecorder.state !== 'inactive') {
+                audioRecorder.stop();
+                
+                audioRecorder.onstop = () => {
+                    // Show transcription in progress
+                    document.getElementById('transcribed-text').textContent = "Transcribing your response...";
+                    document.getElementById('recording-interface').style.display = 'none';
+                    document.getElementById('transcription-review').style.display = 'block';
+                    
+                    // Create blob and transcribe
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    transcribeRecording(audioBlob);
+                };
+            }
+        }
+        
+        function toggleManualEdit() {
+            const isManualMode = document.getElementById('manual-edit-switch').checked;
+            document.getElementById('transcribed-text').style.display = isManualMode ? 'none' : 'block';
+            document.getElementById('manual-edit-container').style.display = isManualMode ? 'block' : 'none';
+            
+            // If switching to manual mode and transcription failed, clear the placeholder text
+            if (isManualMode) {
+                const transcribedText = document.getElementById('transcribed-text').textContent.trim();
+                if (transcribedText.includes("Could not transcribe") || transcribedText.includes("Error during transcription")) {
+                    document.getElementById('manual-transcription').value = '';
+                } else if (transcribedText !== "Loading transcription...") {
+                    // Copy the transcribed text to the textarea for editing
+                    document.getElementById('manual-transcription').value = transcribedText;
+                }
+            }
+        }
+        
+        function transcribeRecording(blob) {
+            // Create form data for transcription request
+            const formData = new FormData();
+            formData.append('audio', blob, 'audio.webm');
+            
+            // Send to server for transcription
+            fetch('/transcribe_audio', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('transcribed-text').textContent = data.text;
+                    document.getElementById('manual-transcription').value = data.text;
+                } else {
+                    const errorMessage = "Automatic transcription failed. You can manually edit your response or submit as is.";
+                    document.getElementById('transcribed-text').textContent = errorMessage;
+                    // Automatically switch to manual edit mode on transcription failure
+                    document.getElementById('manual-edit-switch').checked = true;
+                    toggleManualEdit();
+                }
+            })
+            .catch(error => {
+                const errorMessage = "Automatic transcription failed. You can manually edit your response or submit as is.";
+                document.getElementById('transcribed-text').textContent = errorMessage;
+                // Automatically switch to manual edit mode on transcription failure
+                document.getElementById('manual-edit-switch').checked = true;
+                toggleManualEdit();
+                console.error('Error transcribing:', error);
+            });
+        }
+        
+        function rerecordAnswer() {
+            document.getElementById('transcription-review').style.display = 'none';
+            document.getElementById('recording-interface').style.display = 'block';
+            startRecording();
+        }
+        
+        function submitAnalysis() {
+            // Check if in manual edit mode and get the text from the appropriate source
+            const isManualMode = document.getElementById('manual-edit-switch').checked;
+            const transcribedText = isManualMode 
+                ? document.getElementById('manual-transcription').value 
+                : document.getElementById('transcribed-text').textContent;
+            
+            // Store the transcribed text to potentially use in analysis
+            window.transcribedUserResponse = transcribedText;
+            
+            document.getElementById('transcription-review').style.display = 'none';
+            document.getElementById('loading').style.display = 'flex';
+            document.getElementById('status-message').textContent = 'Initializing analysis...';
+            
+            startAnalysisProgress();
+            analyzeResponse();
+        }
+
+        function startAnalysisProgress() {
+            let analysisProgress = 0;
+            const progressBar = document.getElementById('analysis-progress');
+            const statusMessage = document.getElementById('status-message');
+            const stages = [
+                { progress: 20, message: 'Processing speech...' },
+                { progress: 40, message: 'Analyzing response content...' },
+                { progress: 60, message: 'Evaluating speaking patterns...' },
+                { progress: 80, message: 'Assessing communication skills...' },
+                { progress: 95, message: 'Generating feedback...' }
+            ];
+            let currentStage = 0;
+            
+            analysisTimer = setInterval(() => {
+                analysisProgress += 1;
+                progressBar.style.width = `${analysisProgress}%`;
+                
+                if (currentStage < stages.length && analysisProgress >= stages[currentStage].progress) {
+                    statusMessage.textContent = stages[currentStage].message;
+                    currentStage++;
+                }
+                
+                if (analysisProgress >= 100) {
+                    clearInterval(analysisTimer);
+                }
+            }, 60); // Faster progress than before
+        }
+
+        function replayRecording() {
+            document.getElementById('recording-interface').style.display = 'block';
+            document.getElementById('feedback-section').style.display = 'none';
+            startRecording(); // Restart recording process
+        }
+
+        function analyzeResponse() {
+            const questionText = document.getElementById('selected-question').innerText;
+            const question = questions.find(q => q.text === questionText);
+            const questionId = question ? question.id : null;
+            
+            const formData = new FormData();
+            formData.append('question_id', questionId);
+
+            if (audioChunks.length === 0) {
+                document.getElementById('loading').style.display = 'none';
+                alert('No recording was made. Please record your answer before submitting.');
+                document.getElementById('recording-interface').style.display = 'block';
+                return;
+            }
+
+            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+            
+            // Check file sizes
+            if (audioBlob.size > 90 * 1024 * 1024) {
+                document.getElementById('loading').style.display = 'none';
+                alert('Your recording is too large (over 90MB). Please try recording a shorter answer.');
+                document.getElementById('recording-interface').style.display = 'block';
+                return;
+            }
+            
+            // Add transcription if using manual mode
+            const isManualMode = document.getElementById('manual-edit-switch').checked;
+            if (isManualMode) {
+                const manualText = document.getElementById('manual-transcription').value;
+                formData.append('manual_transcription', manualText);
+            }
+            
+            formData.append('audio', audioBlob, 'audio.webm');
+
+            fetch('/analyze_audio', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Since the analyze_audio endpoint returns the result directly, we can display it
+                    displayAnalysisResults(data.result);
+                } else {
+                    console.error('Error analyzing response:', data.message);
+                    document.getElementById('loading').style.display = 'none';
+                    alert('Error analyzing response: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error analyzing response:', error);
+                document.getElementById('loading').style.display = 'none';
+            });
+        }
+
+        function displayAnalysisResults(result) {
+            // Hide loading indicator
+            document.getElementById('loading').style.display = 'none';
+            
+            // Display feedback section
+            document.getElementById('feedback-section').style.display = 'block';
+            
+            // If the result is wrapped in a result property (from the analyze_audio endpoint)
+            if (result.result) {
+                result = result.result;
+            }
+            
+            // Update feedback content with accuracy visualization
+            const accuracyElement = document.getElementById('accuracy-feedback');
+            const accuracy = result.accuracy || 75; // Use default if not available
+            
+            // Create a more detailed accuracy display with color coding
+            let accuracyColorClass = 'text-danger';
+            if (accuracy >= 90) {
+                accuracyColorClass = 'text-success';
+            } else if (accuracy >= 75) {
+                accuracyColorClass = 'text-primary';
+            } else if (accuracy >= 60) {
+                accuracyColorClass = 'text-warning';
+            }
+            
+            accuracyElement.innerHTML = `
+                Your answer covered <span class="${accuracyColorClass} fw-bold">${accuracy}%</span> of expected key points. 
+                ${getAccuracyCommentary(accuracy)}
+            `;
+            
+            // Update key points covered
+            const keyPointsList = document.getElementById('key-points-list');
+            keyPointsList.innerHTML = '';
+            
+            if (result.key_points_covered && result.key_points_covered.length > 0) {
+                result.key_points_covered.forEach(point => {
+                    const li = document.createElement('li');
+                    li.textContent = point;
+                    keyPointsList.appendChild(li);
+                });
+            } else {
+                const li = document.createElement('li');
+                li.textContent = "Your answer was structured clearly";
+                keyPointsList.appendChild(li);
+            }
+            
+            // Update missing points
+            const missingPointsList = document.getElementById('missing-points-list');
+            missingPointsList.innerHTML = '';
+            
+            if (result.missing_points && result.missing_points.length > 0) {
+                result.missing_points.forEach(point => {
+                    const li = document.createElement('li');
+                    li.textContent = point;
+                    missingPointsList.appendChild(li);
+                });
+            } else {
+                const li = document.createElement('li');
+                li.textContent = "Consider adding more specific examples";
+                missingPointsList.appendChild(li);
+            }
+            
+            // Update clarity feedback
+            document.getElementById('clarity-feedback').innerText = 
+                result.clarityFeedback || 
+                "Your speech was clear and well-paced. Focus on maintaining this clarity in actual interviews.";
+            
+            // Update improvement tips if available
+            const tipsList = document.getElementById('improvement-tips');
+            tipsList.innerHTML = '';
+            
+            if (result.improvementTips && result.improvementTips.length > 0) {
+                result.improvementTips.forEach(tip => {
+                    const li = document.createElement('li');
+                    li.textContent = tip;
+                    tipsList.appendChild(li);
+                });
+            } else if (result.improvement_areas && result.improvement_areas.length > 0) {
+                // Handle format from analyze_audio endpoint
+                result.improvement_areas.forEach(area => {
+                    const li = document.createElement('li');
+                    li.textContent = area;
+                    tipsList.appendChild(li);
+                });
+            } else {
+                // Default tips
+                const defaultTips = [
+                    "Practice more concise answers that focus on key points",
+                    "Use more specific examples in your responses",
+                    "Work on your vocal variety to keep the interviewer engaged"
+                ];
+                defaultTips.forEach(tip => {
+                    const li = document.createElement('li');
+                    li.textContent = tip;
+                    tipsList.appendChild(li);
+                });
+            }
+        }
+        
+        // Generate commentary based on accuracy level for HR responses
+        function getAccuracyCommentary(accuracy) {
+            if (accuracy >= 90) {
+                return "Your response is exceptionally well-structured and addresses all key aspects of the question.";
+            } else if (accuracy >= 80) {
+                return "Your answer is comprehensive and includes most of the important elements.";
+            } else if (accuracy >= 70) {
+                return "Your response covers the essentials but would benefit from more concrete examples.";
+            } else if (accuracy >= 60) {
+                return "Your answer addresses the question but lacks sufficient detail and structure.";
+            } else {
+                return "Your response needs significant improvement in both content and delivery.";
+            }
+        }
+
+        function backToQuestions() {
+            document.getElementById('feedback-section').style.display = 'none';
+            document.getElementById('question-selection').style.display = 'block';
+        }
+
+        // Render questions on page load
+        window.onload = renderQuestions;
+    </script>
+</body>
+</html>

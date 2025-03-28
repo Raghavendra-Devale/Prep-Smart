@@ -1,12 +1,24 @@
 import traceback
-from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify, send_file
 import sqlite3
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timezone
 import time
+import os
+import threading
+import json
+import uuid
+import random
+from werkzeug.utils import secure_filename
+from analysis import analyze_interview_response, convert_audio_to_text, compare_answers
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
+app.config['UPLOAD_FOLDER'] = 'uploads'
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+
+# Ensure upload directory exists
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # Register adapter and converter for datetime
 def adapt_datetime(dt):
@@ -21,12 +33,174 @@ sqlite3.register_converter("timestamp", convert_datetime)
 # SQLite Configuration
 def get_db_connection():
     try:
-        conn = sqlite3.connect('placement_preparation.db', timeout=20, detect_types=sqlite3.PARSE_DECLTYPES)
+        conn = sqlite3.connect('placement_preparation.db', timeout=60, detect_types=sqlite3.PARSE_DECLTYPES)
         conn.row_factory = sqlite3.Row
         return conn
     except sqlite3.Error as e:
         print(f"Database connection error: {e}")
         raise
+
+# Ensure the 'id' column exists in required tables
+def ensure_id_column():
+    """Ensure the 'id' column exists in required tables."""
+    try:
+        db = get_db_connection()
+        cursor = db.cursor()
+
+        # Ensure 'id' column in 'users' table
+        cursor.execute("PRAGMA table_info(users)")
+        columns = [row['name'] for row in cursor.fetchall()]
+        if 'id' not in columns:
+            cursor.execute("ALTER TABLE users ADD COLUMN id INTEGER PRIMARY KEY AUTOINCREMENT")
+            print("Added 'id' column to 'users' table.")
+
+        # Ensure 'id' column in 'students' table
+        cursor.execute("PRAGMA table_info(students)")
+        columns = [row['name'] for row in cursor.fetchall()]
+        if 'id' not in columns:
+            cursor.execute("ALTER TABLE students ADD COLUMN id INTEGER PRIMARY KEY AUTOINCREMENT")
+            print("Added 'id' column to 'students' table.")
+
+        # Add similar checks for other tables if needed
+        db.commit()
+    except Exception as e:
+        print(f"Error ensuring 'id' column: {e}")
+    finally:
+        if db:
+            db.close()
+
+def ensure_id_columns():
+    """Ensure the 'id' column exists in required tables."""
+    try:
+        db = get_db_connection()
+        cursor = db.cursor()
+
+        # Ensure 'id' column in 'questions' table
+        cursor.execute("PRAGMA table_info(questions)")
+        columns = [row['name'] for row in cursor.fetchall()]
+        if 'id' not in columns:
+            # Create a new table with the correct schema
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS questions_new (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    question_text TEXT NOT NULL,
+                    correct_answer TEXT
+                )
+            """)
+            # Migrate data from the old table to the new table
+            cursor.execute("INSERT INTO questions_new (question_text, correct_answer) SELECT question_text, correct_answer FROM questions")
+            # Drop the old table and rename the new table
+            cursor.execute("DROP TABLE questions")
+            cursor.execute("ALTER TABLE questions_new RENAME TO questions")
+            print("Recreated 'questions' table with 'id' column.")
+
+        # Ensure 'id' column in 'users' table
+        cursor.execute("PRAGMA table_info(users)")
+        columns = [row['name'] for row in cursor.fetchall()]
+        if 'id' not in columns:
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS users_new (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    email TEXT NOT NULL UNIQUE,
+                    password TEXT NOT NULL,
+                    role TEXT NOT NULL
+                )
+            """)
+            cursor.execute("INSERT INTO users_new (name, email, password, role) SELECT name, email, password, role FROM users")
+            cursor.execute("DROP TABLE users")
+            cursor.execute("ALTER TABLE users_new RENAME TO users")
+            print("Recreated 'users' table with 'id' column.")
+
+        # Ensure 'id' column in 'students' table
+        cursor.execute("PRAGMA table_info(students)")
+        columns = [row['name'] for row in cursor.fetchall()]
+        if 'id' not in columns:
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS students_new (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    name TEXT NOT NULL,
+                    email TEXT NOT NULL,
+                    phone TEXT,
+                    department TEXT,
+                    graduation_year INTEGER
+                )
+            """)
+            cursor.execute("INSERT INTO students_new (user_id, name, email, phone, department, graduation_year) SELECT user_id, name, email, phone, department, graduation_year FROM students")
+            cursor.execute("DROP TABLE students")
+            cursor.execute("ALTER TABLE students_new RENAME TO students")
+            print("Recreated 'students' table with 'id' column.")
+
+        # Add similar checks for other tables if needed
+        db.commit()
+    except Exception as e:
+        print(f"Error ensuring 'id' column: {e}")
+    finally:
+        if db:
+            db.close()
+
+def ensure_questions_table_id_column():
+    """Ensure the 'id' column exists in the 'questions' table."""
+    try:
+        db = get_db_connection()
+        cursor = db.cursor()
+
+        # Check if 'id' column exists in 'questions' table
+        cursor.execute("PRAGMA table_info(questions)")
+        columns = [row['name'] for row in cursor.fetchall()]
+        if 'id' not in columns:
+            cursor.execute("ALTER TABLE questions ADD COLUMN id INTEGER PRIMARY KEY AUTOINCREMENT")
+            print("Added 'id' column to 'questions' table.")
+
+        db.commit()
+    except Exception as e:
+        print(f"Error ensuring 'id' column in 'questions' table: {e}")
+    finally:
+        if db:
+            db.close()
+
+def initialize_questions_table():
+    """Ensure the 'questions' table is populated with sample data."""
+    try:
+        db = get_db_connection()
+        cursor = db.cursor()
+
+        # Check if the 'questions' table is empty
+        cursor.execute("SELECT COUNT(*) FROM questions")
+        count = cursor.fetchone()[0]
+
+        if count == 0:
+            # Insert sample questions and answers
+            cursor.executemany("""
+                INSERT INTO questions (question_text, correct_answer) 
+                VALUES (?, ?)
+            """, [
+                ("Tell me about yourself.", "I am a [your role] with [X] years of experience in [industry/field]. I have expertise in [key skills] and have worked on [notable projects/achievements]. I'm passionate about [relevant interests] and am looking to [career goals]."),
+                ("What are your strengths and weaknesses?", "My strengths include [list 2-3 key strengths with examples]. As for weaknesses, I'm working on [mention a genuine area of improvement] and have taken steps like [specific actions] to address it."),
+                ("Why do you want to work here?", "I want to work here because [company name] is known for [specific company strengths/values]. I'm particularly interested in [specific aspects of the company] and believe my skills in [relevant skills] align well with the role."),
+                ("Describe a situation where you had to deal with a difficult coworker.", "In a previous role, I dealt with a difficult coworker by [specific approach]. I focused on [key actions taken] and the outcome was [positive result]. This taught me the importance of [key learning]."),
+                ("What are your career goals for the next five years?", "My career goals include [specific short-term goals] and [long-term aspirations]. I plan to achieve these through [specific steps/strategies]."),
+                ("Tell me about a time you failed at something and what you learned.", "A significant failure I experienced was [describe situation]. From this, I learned [key lessons] and implemented [specific changes] to prevent similar issues in the future."),
+                ("Explain the concept of closures in JavaScript.", "Closures in JavaScript are functions that have access to variables in their outer scope, even after the outer function has returned. They're useful for [specific use cases] and help maintain [specific benefits]."),
+                ("Write a function to reverse a linked list.", "To reverse a linked list, you need to [algorithm steps]. The time complexity is O(n) and space complexity is O(1). Here's how it works: [explanation]"),
+                ("What are the differences between SQL and NoSQL databases?", "SQL databases are [characteristics] while NoSQL databases are [characteristics]. The main differences are [key differences] and each is better suited for [specific use cases]."),
+                ("Describe how virtual memory works in operating systems.", "Virtual memory works by [explanation]. The key components are [components] and it provides benefits like [benefits]."),
+                ("Explain the concept of multithreading and its benefits.", "Multithreading allows [explanation]. The benefits include [benefits] and it's particularly useful for [use cases]."),
+                ("What is dynamic programming and when would you use it?", "Dynamic programming is [explanation]. It's best used when [conditions] and involves [key steps]. The main advantages are [advantages].")
+            ])
+            print("Initialized 'questions' table with sample data.")
+
+        db.commit()
+    except Exception as e:
+        print(f"Error initializing 'questions' table: {e}")
+    finally:
+        if db:
+            db.close()
+
+# Ensure all necessary columns exist during app initialization
+ensure_id_columns()
+initialize_questions_table()
 
 # Home/Login Page
 @app.route('/')
@@ -911,7 +1085,7 @@ def notifications():
 
 @app.route('/technical_interview')
 def technical_interview():
-    return render_template('interview/technical_interview.html')    
+    return render_template('interview/technical_interview.html')
 
 @app.route('/hr_interview')
 def hr_interview():
@@ -1291,35 +1465,6 @@ def init_mock_progress():
                 INSERT OR IGNORE INTO progress_topics 
                 (topic_id, topic_name, parent_topic, description, total_questions) 
                 VALUES 
-                (101, 'Time and Work', 'Aptitude', 'Problems related to time and work', 10),
-                (102, 'Percentages', 'Aptitude', 'Percentage calculations', 10),
-                (103, 'Probability', 'Aptitude', 'Probability problems', 10)
-            """)
-            
-        # Check if communication topics exist
-        cursor.execute("SELECT COUNT(*) FROM progress_topics WHERE parent_topic = 'Communication'")
-        comm_topic_count = cursor.fetchone()[0]
-        
-        if comm_topic_count == 0:
-            # Create some communication topics if none exist
-            cursor.execute("""
-                INSERT OR IGNORE INTO progress_topics 
-                (topic_id, topic_name, parent_topic, description, total_questions) 
-                VALUES 
-                (201, 'Verbal Skills', 'Communication', 'Verbal communication', 10),
-                (202, 'Writing Skills', 'Communication', 'Written communication', 10),
-                (203, 'Presentation', 'Communication', 'Presentation skills', 10)
-            """)
-        
-        # Add some mock student answers for Aptitude topics
-        cursor.execute("""
-            INSERT OR IGNORE INTO student_answers 
-            (student_id, question_id, topic_id, given_answer, is_correct) 
-            VALUES 
-            (?, 1, 101, 'answer1', 1),
-            (?, 2, 101, 'answer2', 1),
-            (?, 3, 101, 'answer3', 1),
-            (?, 1, 102, 'answer1', 1),
             (?, 2, 102, 'answer2', 1)
         """, (student_id, student_id, student_id, student_id, student_id))
         
@@ -1792,6 +1937,513 @@ def get_communication_progress():
     finally:
         if db:
             db.close()
+
+# Add a dictionary to store analysis results
+analysis_results = {}
+
+@app.route('/analyze', methods=['POST'])
+def analyze():
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'Not logged in'}), 401
+
+    try:
+        # Create a unique identifier for this analysis request
+        analysis_id = str(uuid.uuid4())
+        
+        # Get question ID from request data if available
+        question_id = request.form.get('question_id')
+        
+        # Store initial status
+        analysis_results[analysis_id] = {
+            'status': 'processing',
+            'progress': 0,
+            'message': 'Analysis started',
+            'questionId': question_id
+        }
+        
+        # Check if video is included in the request
+        if 'video' not in request.files:
+            analysis_results[analysis_id].update({
+                'status': 'error',
+                'message': 'No video recording provided'
+            })
+            return jsonify({
+                'success': False,
+                'message': 'No video recording provided. Please record your answer before submitting.'
+            }), 400
+            
+        video_file = request.files['video']
+        
+        # Create temp directory if it doesn't exist
+        if not os.path.exists('temp'):
+            os.makedirs('temp')
+        
+        # Include question ID in filename if available
+        if question_id:
+            video_path = f'temp/{analysis_id}_question_{question_id}_{video_file.filename}'
+        else:
+            video_path = f'temp/{analysis_id}_{video_file.filename}'
+            
+        video_file.save(video_path)
+        
+        # Fetch the correct answer for the question from the database
+        db = get_db_connection()
+        cursor = db.cursor()
+        cursor.execute("SELECT correct_answer FROM questions WHERE id = ?", (question_id,))
+        correct_answer = cursor.fetchone()
+        db.close()
+
+        if not correct_answer:
+            return jsonify({
+                'success': False,
+                'message': 'Correct answer not found for the given question.'
+            }), 404
+
+        # Start analysis in a separate thread
+        thread = threading.Thread(
+            target=process_video_analysis, 
+            args=(analysis_id, video_path, correct_answer[0])
+        )
+        thread.daemon = True
+        thread.start()
+
+        # Include audio file URL in the response
+        audio_url = f"/uploads/{os.path.basename(video_path)}"
+
+        return jsonify({
+            'success': True, 
+            'message': 'Analysis started', 
+            'analysis_id': analysis_id,
+            'audio_url': audio_url
+        })
+        
+    except Exception as e:
+        print(f"Error starting analysis: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/check_analysis_status/<analysis_id>', methods=['GET'])
+def check_analysis_status(analysis_id):
+    if analysis_id not in analysis_results:
+        return jsonify({
+            'success': False, 
+            'message': 'Analysis ID not found'
+        }), 404
+        
+    return jsonify({
+        'success': True,
+        'result': analysis_results[analysis_id]
+    })
+
+def process_video_analysis(analysis_id, video_path, correct_answer):
+    try:
+        # Update status to show progress
+        analysis_results[analysis_id]['progress'] = 10
+        analysis_results[analysis_id]['message'] = 'Initializing video analysis...'
+        time.sleep(0.3)
+        
+        # Simulate analysis and comparison with the correct answer
+        analysis_results[analysis_id]['progress'] = 50
+        analysis_results[analysis_id]['message'] = 'Comparing with the correct answer...'
+        time.sleep(0.3)
+
+        # Simulate comparison logic (replace with actual comparison logic)
+        similarity_score = random.uniform(0, 1) * 100  # Simulated similarity percentage
+
+        # Update the results with comparison details
+        analysis_results[analysis_id].update({
+            'status': 'completed',
+            'progress': 100,
+            'message': 'Analysis complete',
+            'similarity_score': round(similarity_score, 1),
+            'correct_answer': correct_answer
+        })
+
+        # Clean up the temporary file
+        if os.path.exists(video_path):
+            os.remove(video_path)
+        
+    except Exception as e:
+        print(f"Error in processing video analysis: {e}")
+        analysis_results[analysis_id].update({
+            'status': 'error',
+            'message': f'Error during analysis: {str(e)}'
+        })
+        
+        # Clean up the temporary file if it exists
+        if os.path.exists(video_path):
+            os.remove(video_path)
+
+def generate_body_language_feedback(metrics, is_hr_question):
+    """Generate detailed body language feedback based on metrics"""
+    feedback_parts = []
+    
+    # Eye contact feedback
+    if metrics['eye_contact'] >= 0.9:
+        feedback_parts.append("Excellent eye contact maintained throughout the response")
+    elif metrics['eye_contact'] >= 0.7:
+        feedback_parts.append("Good eye contact with occasional breaks")
+    else:
+        feedback_parts.append("Limited eye contact - practice maintaining more consistent eye contact")
+    
+    # Posture feedback
+    if metrics['posture'] >= 0.9:
+        feedback_parts.append("Professional and confident posture")
+    elif metrics['posture'] >= 0.7:
+        feedback_parts.append("Generally good posture with minor adjustments needed")
+    else:
+        feedback_parts.append("Posture needs improvement - focus on maintaining an upright, confident stance")
+    
+    # Gestures feedback
+    if metrics['gestures'] >= 0.9:
+        feedback_parts.append("Effective use of gestures to emphasize key points")
+    elif metrics['gestures'] >= 0.7:
+        feedback_parts.append("Appropriate gestures, though could be more purposeful")
+    else:
+        feedback_parts.append("Limited use of gestures - incorporate more natural hand movements")
+    
+    # Facial expressions feedback
+    if metrics['facial_expressions'] >= 0.9:
+        feedback_parts.append("Natural and engaging facial expressions")
+    elif metrics['facial_expressions'] >= 0.7:
+        feedback_parts.append("Generally natural facial expressions")
+    else:
+        feedback_parts.append("Facial expressions could be more natural and engaging")
+    
+    return " ".join(feedback_parts)
+
+def generate_clarity_feedback(speech_metrics, content_metrics, is_hr_question):
+    """Generate detailed clarity feedback based on metrics"""
+    feedback_parts = []
+    
+    # Speech clarity feedback
+    if speech_metrics['clarity'] >= 0.9:
+        feedback_parts.append("Your speech is clear and well-paced")
+    elif speech_metrics['clarity'] >= 0.7:
+        feedback_parts.append("Your speech is somewhat clear but could be more precise")
+    else:
+        feedback_parts.append("Your speech clarity needs improvement - practice enunciating more clearly")
+    
+    # Content relevance feedback
+    if content_metrics['relevance'] >= 0.9:
+        feedback_parts.append("Your response is highly relevant to the question")
+    elif content_metrics['relevance'] >= 0.7:
+        feedback_parts.append("Your response is somewhat relevant but could be more focused")
+    else:
+        feedback_parts.append("Your response relevance needs improvement - focus on the question's main points")
+    
+    # Answer completeness feedback
+    if content_metrics['completeness'] >= 0.9:
+        feedback_parts.append("Your answer is complete and covers all aspects of the question")
+    elif content_metrics['completeness'] >= 0.7:
+        feedback_parts.append("Your answer is somewhat complete but could be more comprehensive")
+    else:
+        feedback_parts.append("Your answer completeness needs improvement - ensure you address all parts of the question")
+    
+    # Technical accuracy feedback
+    if content_metrics['technical_accuracy'] >= 0.9:
+        feedback_parts.append("Your answer is technically accurate and meets the question's requirements")
+    elif content_metrics['technical_accuracy'] >= 0.7:
+        feedback_parts.append("Your answer is somewhat accurate but could be more precise")
+    else:
+        feedback_parts.append("Your answer technical accuracy needs improvement - ensure you provide accurate and relevant information")
+    
+    return " ".join(feedback_parts)
+
+def simulate_analysis(analysis_id):
+    """Simulate the analysis process when no video is provided"""
+    try:
+        # Update status to show progress
+        analysis_results[analysis_id]['progress'] = 10
+        analysis_results[analysis_id]['message'] = 'Initializing analysis...'
+        time.sleep(0.3)
+        
+        # Extract question ID for context-aware analysis
+        question_id = analysis_results[analysis_id].get('questionId')
+        try:
+            question_id = int(question_id) if question_id is not None else None
+        except ValueError:
+            question_id = None
+            
+        # Determine if this is an HR or Technical question
+        is_hr_question = question_id > 100 if question_id is not None else False
+        
+        # Simulate speech analysis
+        analysis_results[analysis_id]['progress'] = 20
+        analysis_results[analysis_id]['message'] = 'Analyzing speech patterns...'
+        time.sleep(0.3)
+        
+        # Simulate body language analysis
+        analysis_results[analysis_id]['progress'] = 40
+        analysis_results[analysis_id]['message'] = 'Evaluating body language...'
+        time.sleep(0.3)
+        
+        # Simulate content analysis
+        analysis_results[analysis_id]['progress'] = 60
+        analysis_results[analysis_id]['message'] = 'Analyzing content structure...'
+        time.sleep(0.3)
+        
+        # Generate simulated metrics
+        speech_metrics = {
+            'pace': random.uniform(0.8, 1.2),
+            'clarity': random.uniform(0.7, 1.0),
+            'filler_words': random.randint(0, 5),
+            'pauses': random.randint(2, 8)
+        }
+        
+        body_language_metrics = {
+            'eye_contact': random.uniform(0.6, 1.0),
+            'posture': random.uniform(0.7, 1.0),
+            'gestures': random.uniform(0.6, 1.0),
+            'facial_expressions': random.uniform(0.7, 1.0)
+        }
+
+        content_metrics = {
+            'organization': random.uniform(0.7, 1.0),
+            'relevance': random.uniform(0.7, 1.0),
+            'technical_accuracy': random.uniform(0.7, 1.0)
+        }
+
+        accuracy = (
+            speech_metrics['clarity'] * 0.25 +
+            body_language_metrics['eye_contact'] * 0.15 +
+            body_language_metrics['posture'] * 0.15 +
+            content_metrics['organization'] * 0.15 +
+            content_metrics['relevance'] * 0.15 +
+            content_metrics['technical_accuracy'] * 0.15
+        ) * 100
+        
+        # Generate feedback
+        body_feedback = generate_body_language_feedback(body_language_metrics, is_hr_question)
+        clarity_feedback = generate_clarity_feedback(speech_metrics, content_metrics, is_hr_question)
+        improvement_tips = get_question_specific_tips(question_id, accuracy)
+        
+        # Update the results with simulated analysis
+        analysis_results[analysis_id].update({
+            'status': 'completed',
+            'progress': 100,
+            'message': 'Analysis complete',
+            'accuracy': round(accuracy, 1),
+            'bodyLanguageFeedback': body_feedback,
+            'clarityFeedback': clarity_feedback,
+            'improvementTips': improvement_tips,
+            'metrics': {
+                'speech': speech_metrics,
+                'body_language': body_language_metrics,
+                'content': content_metrics
+            }
+        })
+        
+    except Exception as e:
+        print(f"Error in simulation analysis: {e}")
+        analysis_results[analysis_id].update({
+            'status': 'error',
+            'message': f'Error during analysis: {str(e)}'
+        })
+
+def get_question_specific_tips(question_id, accuracy):
+    """Generate specific improvement tips based on question type and accuracy"""
+    tips = []
+    
+    # HR Interview Tips
+    if question_id and question_id > 100:
+        if accuracy >= 90:
+            tips = [
+                "Your response demonstrates strong interpersonal skills",
+                "Continue practicing to maintain this high level of performance",
+                "Consider adding more specific examples to strengthen your answers"
+            ]
+        elif accuracy >= 80:
+            tips = [
+                "Structure your answers using the STAR method (Situation, Task, Action, Result)",
+                "Include more specific examples from your experience",
+                "Practice maintaining eye contact throughout your response"
+            ]
+        else:
+            tips = [
+                "Focus on providing concrete examples from your experience",
+                "Practice answering common HR questions with a friend or mentor",
+                "Work on your body language and maintaining eye contact",
+                "Consider recording yourself to identify areas for improvement"
+            ]
+    
+    # Technical Interview Tips
+    else:
+        if accuracy >= 90:
+            tips = [
+                "Your technical knowledge is strong",
+                "Continue practicing complex problem-solving scenarios",
+                "Consider adding more code examples to your explanations"
+            ]
+        elif accuracy >= 80:
+            tips = [
+                "Practice explaining technical concepts more clearly",
+                "Include more code examples in your responses",
+                "Work on your problem-solving approach explanation"
+            ]
+        else:
+            tips = [
+                "Review fundamental technical concepts",
+                "Practice coding problems regularly",
+                "Work on explaining your thought process clearly",
+                "Consider taking mock technical interviews"
+            ]
+    
+    # Add general tips based on accuracy
+    if accuracy < 70:
+        tips.extend([
+            "Practice speaking more clearly and at a moderate pace",
+            "Record yourself to identify areas for improvement",
+            "Consider working with a mentor or coach"
+        ])
+    
+    return tips
+
+# Rename the second analyze route to avoid conflict
+@app.route('/analyze_audio', methods=['POST'])
+def analyze_audio():
+    if 'audio' not in request.files:
+        return jsonify({
+            'success': False,
+            'message': 'No audio file provided. Please record your voice and upload the file.'
+        })
+    
+    audio_file = request.files['audio']
+    question_id = request.form.get('question_id')
+    
+    if not audio_file or not question_id:
+        return jsonify({
+            'success': False,
+            'message': 'Missing required fields. Ensure both audio and question ID are provided.'
+        })
+    
+    # Generate unique filename
+    filename = secure_filename(f"{uuid.uuid4()}.webm")
+    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    
+    try:
+        # Save the audio file
+        audio_file.save(filepath)
+        
+        # Analyze the response
+        result = analyze_interview_response(filepath, int(question_id))
+        
+        # Clean up the uploaded file
+        os.remove(filepath)
+        
+        return jsonify({
+            'success': True,
+            'message': 'Audio analysis completed successfully.',
+            'result': result
+        })
+    except Exception as e:
+        # Clean up in case of error
+        if os.path.exists(filepath):
+            os.remove(filepath)
+        return jsonify({
+            'success': False,
+            'message': f'Error processing audio: {str(e)}'
+        })
+
+@app.route('/check_audio_analysis_status/<analysis_id>')
+def check_audio_analysis_status(analysis_id):
+    # In a real application, you would check the status from a database
+    # For now, we'll return a mock response
+    return jsonify({
+        'success': True,
+        'result': {
+            'status': 'completed',
+            'progress': 100,
+            'message': 'Analysis complete',
+            'accuracy': 85,
+            'key_points_covered': ['Point 1', 'Point 2'],
+            'missing_points': ['Point 3'],
+            'improvement_areas': ['Area 1', 'Area 2']
+        }
+    })
+
+@app.route('/fix_schema')
+def fix_schema():
+    try:
+        db = get_db_connection()
+        cursor = db.cursor()
+
+        # Check and fix the 'students' table
+        cursor.execute("PRAGMA table_info(students)")
+        columns = [row['name'] for row in cursor.fetchall()]
+        if 'id' not in columns:
+            cursor.execute("ALTER TABLE students ADD COLUMN id INTEGER PRIMARY KEY AUTOINCREMENT")
+            print("Added 'id' column to 'students' table.")
+
+        # Check and fix other related tables if necessary
+        # Example: Ensure 'id' exists in 'users' table
+        cursor.execute("PRAGMA table_info(users)")
+        columns = [row['name'] for row in cursor.fetchall()]
+        if 'id' not in columns:
+            cursor.execute("ALTER TABLE users ADD COLUMN id INTEGER PRIMARY KEY AUTOINCREMENT")
+            print("Added 'id' column to 'users' table.")
+
+        db.commit()
+        return jsonify({'success': True, 'message': 'Schema fixed successfully.'})
+    except Exception as e:
+        if db:
+            db.rollback()
+        return jsonify({'success': False, 'message': str(e)})
+    finally:
+        if db:
+            db.close()
+
+@app.route('/transcribe_audio', methods=['POST'])
+def transcribe_audio():
+    """Handle audio transcription requests."""
+    try:
+        if 'audio' not in request.files:
+            return jsonify({
+                'success': False,
+                'message': 'No audio file provided'
+            })
+        
+        audio_file = request.files['audio']
+        if audio_file.filename == '':
+            return jsonify({
+                'success': False,
+                'message': 'No selected file'
+            })
+        
+        # Create a temporary directory if it doesn't exist
+        temp_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'temp')
+        os.makedirs(temp_dir, exist_ok=True)
+        
+        # Generate a unique filename
+        filename = f"temp_audio_{uuid.uuid4()}.webm"
+        filepath = os.path.join(temp_dir, filename)
+        
+        # Save the uploaded file
+        audio_file.save(filepath)
+        
+        try:
+            # Convert audio to text using the analysis module
+            text = convert_audio_to_text(filepath)
+            
+            # Clean up the temporary file
+            os.remove(filepath)
+            
+            return jsonify({
+                'success': True,
+                'text': text
+            })
+            
+        except Exception as e:
+            # Clean up the temporary file in case of error
+            if os.path.exists(filepath):
+                os.remove(filepath)
+            raise e
+            
+    except Exception as e:
+        print(f"Error in transcribe_audio: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': f'Error processing audio: {str(e)}'
+        })
 
 if __name__ == '__main__':
     app.run(debug=True)
