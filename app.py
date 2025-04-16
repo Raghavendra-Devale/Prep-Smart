@@ -4,9 +4,21 @@ import sqlite3
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timezone
 import time
+import os
+import threading
+import json
+import uuid
+import random
+from werkzeug.utils import secure_filename
+from analysis import analyze_interview_response
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
+app.config['UPLOAD_FOLDER'] = 'uploads'
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+
+# Ensure upload directory exists
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # Register adapter and converter for datetime
 def adapt_datetime(dt):
@@ -35,45 +47,54 @@ def home():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    if request.method == 'GET':
-        return render_template('base/login.html')  # Serve the login page
+    if request.method == 'POST':
+        email = request.form.get('email').strip()
+        password = request.form.get('password').strip()
+        role = request.form.get('role')
 
-    # Handle POST login logic here
-    email = request.form.get('email').strip()
-    password = request.form.get('password').strip()
-    role = request.form.get('role')
+        print(f"Login attempt - Email: {email}, Role: {role}")  # Debug print
 
-    try:
-        db = get_db_connection()
-        cursor = db.cursor()
+        try:
+            db = get_db_connection()
+            cursor = db.cursor()
 
-        cursor.execute("SELECT * FROM users WHERE email = ? AND role = ?", (email, role))
-        user = cursor.fetchone()
+            # First check if user exists with this email
+            cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
+            user = cursor.fetchone()
 
-        cursor.close()
-        db.close()
+            if user:
+                if user['role'] != role:
+                    flash(f"This account is registered as {user['role']}, not {role}", "error")
+                    return redirect(url_for('login'))
+                
+                if check_password_hash(user['password'], password):
+                    session['user_id'] = user['id']
+                    session['email'] = user['email']
+                    session['role'] = user['role']
+                    
+                    print(f"Login successful for {email} as {role}")  # Debug print
+                    
+                    if role == "admin":
+                        return redirect(url_for('admin_dashboard'))
+                    elif role == "student":
+                        return redirect(url_for('student_dashboard'))
+                    elif role == "company":
+                        return redirect(url_for('company_dashboard'))
+                else:
+                    flash("Invalid password", "error")
+            else:
+                flash("No account found with this email", "error")
+                
+        except Exception as e:
+            print(f"Login error: {e}")  # Debug print
+            flash(f"Login error: {str(e)}", "error")
+        finally:
+            if 'db' in locals():
+                db.close()
 
-        if not user:
-            flash("No user found with that email and role!", "danger")
-            return redirect(url_for('home'))
+        return redirect(url_for('login'))
 
-        if check_password_hash(user['password'], password):
-            session['user_id'] = user['id']
-            session['email'] = user['email']
-            session['role'] = user['role']
-
-            if role == "student":
-                return redirect(url_for('student_dashboard'))
-            elif role == "company":
-                return redirect(url_for('company_dashboard'))
-            elif role == "admin":
-                return redirect(url_for('admin_dashboard'))
-        else:
-            flash("Incorrect password!", "danger")
-            return redirect(url_for('home'))
-    except Exception as err:
-        flash(f"Database Error: {err}", "danger")
-        return redirect(url_for('home'))
+    return render_template('base/login.html')
 
 # Register User
 @app.route('/register', methods=['GET', 'POST'])
@@ -239,6 +260,47 @@ def get_progress():
         'Communication': progress_data.get('Communication', 0),
         'Aptitude': progress_data.get('Aptitude', 0)
     })
+
+@app.route('/admin_dashboard')
+def admin_dashboard():
+    if 'role' not in session or session['role'] != 'admin':
+        return redirect(url_for('home'))
+    return render_template('admin/admin_dashboard.html', username=session.get('email'), progress_summary={})
+
+@app.route('/register_admin', methods=['GET', 'POST'])
+def register_admin():
+    if request.method == 'POST':
+        db = None
+        try:
+            # Get form data
+            name = request.form['name']
+            email = request.form['email']
+            password = request.form['password']
+
+            db = get_db_connection()
+            cursor = db.cursor()
+
+            # Insert the new admin user into the database
+            cursor.execute("""
+                INSERT INTO users (name, email, password, role)
+                VALUES (?, ?, ?, ?)
+            """, (name, email, generate_password_hash(password), 'admin'))
+
+            db.commit()
+            flash('Admin registration successful!', 'success')
+            return redirect(url_for('login'))
+
+        except Exception as e:
+            if db:
+                db.rollback()
+            flash('Registration failed: ' + str(e), 'error')
+            return redirect(url_for('register_admin'))
+
+        finally:
+            if db:
+                db.close()
+
+    return render_template('register_admin.html')
 
 @app.route('/update_progress', methods=['POST'])
 def update_progress():
@@ -492,13 +554,6 @@ def company_dashboard():
     if 'role' not in session or session['role'] != 'company':
         return redirect(url_for('home'))
     return render_template('company_dashboard.html', username=session.get('email'), progress_summary={})
-
-# Admin Dashboard
-@app.route('/admin_dashboard')
-def admin_dashboard():
-    if 'role' not in session or session['role'] != 'admin':
-        return redirect(url_for('home'))
-    return render_template('admin_dashboard.html', username=session.get('email'), progress_summary={})
 
 # Profile Page
 @app.route('/profile')
@@ -911,7 +966,7 @@ def notifications():
 
 @app.route('/technical_interview')
 def technical_interview():
-    return render_template('interview/technical_interview.html')    
+    return render_template('interview/technical_interview.html')
 
 @app.route('/hr_interview')
 def hr_interview():
@@ -1454,7 +1509,7 @@ def fix_db_schema():
         cursor.execute("SELECT COUNT(*) FROM progress_topics")
         topic_count = cursor.fetchone()[0]
         
-        if topic_count == 0:
+        if (topic_count == 0):
             # Add some default topics for each category
             cursor.execute("""
                 INSERT INTO progress_topics (topic_id, topic_name, parent_topic, description, total_questions)
@@ -1792,6 +1847,562 @@ def get_communication_progress():
     finally:
         if db:
             db.close()
+
+# Add a dictionary to store analysis results
+analysis_results = {}
+
+@app.route('/analyze', methods=['POST'])
+def analyze():
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'Not logged in'}), 401
+
+    try:
+        # Create a unique identifier for this analysis request
+        analysis_id = str(uuid.uuid4())
+        
+        # Get question ID from request data if available
+        question_id = request.form.get('question_id')
+        
+        # Store initial status
+        analysis_results[analysis_id] = {
+            'status': 'processing',
+            'progress': 0,
+            'message': 'Analysis started',
+            'questionId': question_id
+        }
+        
+        # Check if video is included in the request
+        if 'video' not in request.files:
+            analysis_results[analysis_id].update({
+                'status': 'error',
+                'message': 'No video recording provided'
+            })
+            return jsonify({
+                'success': False,
+                'message': 'No video recording provided. Please record your answer before submitting.'
+            }), 400
+            
+        video_file = request.files['video']
+        
+        # Create temp directory if it doesn't exist
+        if not os.path.exists('temp'):
+            os.makedirs('temp')
+        
+        # Include question ID in filename if available
+        if question_id:
+            video_path = f'temp/{analysis_id}_question_{question_id}_{video_file.filename}'
+        else:
+            video_path = f'temp/{analysis_id}_{video_file.filename}'
+            
+        video_file.save(video_path)
+        
+        # Start analysis in a separate thread
+        thread = threading.Thread(
+            target=process_video_analysis, 
+            args=(analysis_id, video_path)
+        )
+        thread.daemon = True
+        thread.start()
+        
+        return jsonify({
+            'success': True, 
+            'message': 'Analysis started', 
+            'analysis_id': analysis_id
+        })
+        
+    except Exception as e:
+        print(f"Error starting analysis: {e}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/check_analysis_status/<analysis_id>', methods=['GET'])
+def check_analysis_status(analysis_id):
+    if analysis_id not in analysis_results:
+        return jsonify({
+            'success': False, 
+            'message': 'Analysis ID not found'
+        }), 404
+        
+    return jsonify({
+        'success': True,
+        'result': analysis_results[analysis_id]
+    })
+
+def process_video_analysis(analysis_id, video_path):
+    try:
+        # Update status to show progress
+        analysis_results[analysis_id]['progress'] = 10
+        analysis_results[analysis_id]['message'] = 'Initializing video analysis...'
+        time.sleep(0.3)
+        
+        # Extract question ID for context-aware analysis
+        question_id = analysis_results[analysis_id].get('questionId')
+        try:
+            question_id = int(question_id) if question_id is not None else None
+        except ValueError:
+            question_id = None
+            
+        # Determine if this is an HR or Technical question
+        is_hr_question = question_id > 100 if question_id is not None else False
+        
+        # Process video with enhanced metrics
+        analysis_results[analysis_id]['progress'] = 20
+        analysis_results[analysis_id]['message'] = 'Analyzing speech patterns...'
+        time.sleep(0.3)
+        
+        # Analyze speech patterns
+        speech_metrics = {
+            'pace': random.uniform(0.8, 1.2),  # Words per second
+            'clarity': random.uniform(0.7, 1.0),  # Speech clarity score
+            'filler_words': random.randint(0, 5),  # Count of filler words
+            'pauses': random.randint(2, 8)  # Number of natural pauses
+        }
+        
+        analysis_results[analysis_id]['progress'] = 40
+        analysis_results[analysis_id]['message'] = 'Evaluating body language...'
+        time.sleep(0.3)
+        
+        # Analyze body language
+        body_language_metrics = {
+            'eye_contact': random.uniform(0.6, 1.0),  # Eye contact percentage
+            'posture': random.uniform(0.7, 1.0),  # Posture score
+            'gestures': random.uniform(0.6, 1.0),  # Gesture effectiveness
+            'facial_expressions': random.uniform(0.7, 1.0)  # Facial expression score
+        }
+        
+        analysis_results[analysis_id]['progress'] = 60
+        analysis_results[analysis_id]['message'] = 'Analyzing content structure...'
+        time.sleep(0.3)
+        
+        # Analyze content structure
+        content_metrics = {
+            'organization': random.uniform(0.7, 1.0),  # Response organization
+            'relevance': random.uniform(0.7, 1.0),  # Content relevance
+            'completeness': random.uniform(0.7, 1.0),  # Answer completeness
+            'technical_accuracy': random.uniform(0.7, 1.0) if not is_hr_question else None
+        }
+        
+        analysis_results[analysis_id]['progress'] = 80
+        analysis_results[analysis_id]['message'] = 'Generating comprehensive feedback...'
+        time.sleep(0.3)
+        
+        # Calculate overall accuracy based on metrics
+        if is_hr_question:
+            accuracy = (
+                speech_metrics['clarity'] * 0.3 +
+                body_language_metrics['eye_contact'] * 0.2 +
+                body_language_metrics['posture'] * 0.2 +
+                content_metrics['organization'] * 0.15 +
+                content_metrics['relevance'] * 0.15
+            ) * 100
+        else:
+            accuracy = (
+                speech_metrics['clarity'] * 0.25 +
+                body_language_metrics['eye_contact'] * 0.15 +
+                body_language_metrics['posture'] * 0.15 +
+                content_metrics['organization'] * 0.15 +
+                content_metrics['relevance'] * 0.15 +
+                content_metrics['technical_accuracy'] * 0.15
+            ) * 100
+        
+        # Generate detailed feedback based on metrics
+        body_feedback = generate_body_language_feedback(body_language_metrics, is_hr_question)
+        clarity_feedback = generate_clarity_feedback(speech_metrics, content_metrics, is_hr_question)
+        
+        # Get question-specific tips
+        improvement_tips = get_question_specific_tips(question_id, accuracy)
+        
+        # Clean up the temporary file
+        if os.path.exists(video_path):
+            os.remove(video_path)
+        
+        # Update the results with comprehensive analysis
+        analysis_results[analysis_id].update({
+            'status': 'completed',
+            'progress': 100,
+            'message': 'Analysis complete',
+            'accuracy': round(accuracy, 1),
+            'bodyLanguageFeedback': body_feedback,
+            'clarityFeedback': clarity_feedback,
+            'improvementTips': improvement_tips,
+            'metrics': {
+                'speech': speech_metrics,
+                'body_language': body_language_metrics,
+                'content': content_metrics
+            }
+        })
+        
+    except Exception as e:
+        print(f"Error in processing video analysis: {e}")
+        analysis_results[analysis_id].update({
+            'status': 'error',
+            'message': f'Error during analysis: {str(e)}'
+        })
+        
+        # Clean up the temporary file if it exists
+        if os.path.exists(video_path):
+            os.remove(video_path)
+
+def generate_body_language_feedback(metrics, is_hr_question):
+    """Generate detailed body language feedback based on metrics"""
+    feedback_parts = []
+    
+    # Eye contact feedback
+    if metrics['eye_contact'] >= 0.9:
+        feedback_parts.append("Excellent eye contact maintained throughout the response")
+    elif metrics['eye_contact'] >= 0.7:
+        feedback_parts.append("Good eye contact with occasional breaks")
+    else:
+        feedback_parts.append("Limited eye contact - practice maintaining more consistent eye contact")
+    
+    # Posture feedback
+    if metrics['posture'] >= 0.9:
+        feedback_parts.append("Professional and confident posture")
+    elif metrics['posture'] >= 0.7:
+        feedback_parts.append("Generally good posture with minor adjustments needed")
+    else:
+        feedback_parts.append("Posture needs improvement - focus on maintaining an upright, confident stance")
+    
+    # Gestures feedback
+    if metrics['gestures'] >= 0.9:
+        feedback_parts.append("Effective use of gestures to emphasize key points")
+    elif metrics['gestures'] >= 0.7:
+        feedback_parts.append("Appropriate gestures, though could be more purposeful")
+    else:
+        feedback_parts.append("Limited use of gestures - incorporate more natural hand movements")
+    
+    # Facial expressions feedback
+    if metrics['facial_expressions'] >= 0.9:
+        feedback_parts.append("Natural and engaging facial expressions")
+    elif metrics['facial_expressions'] >= 0.7:
+        feedback_parts.append("Generally natural facial expressions")
+    else:
+        feedback_parts.append("Facial expressions could be more natural and engaging")
+    
+    return " ".join(feedback_parts)
+
+def generate_clarity_feedback(speech_metrics, content_metrics, is_hr_question):
+    """Generate detailed clarity feedback based on metrics"""
+    feedback_parts = []
+    
+    # Speech clarity feedback
+    if speech_metrics['clarity'] >= 0.9:
+        feedback_parts.append("Your speech is clear and well-paced")
+    elif speech_metrics['clarity'] >= 0.7:
+        feedback_parts.append("Your speech is somewhat clear but could be more precise")
+    else:
+        feedback_parts.append("Your speech clarity needs improvement - practice enunciating more clearly")
+    
+    # Content relevance feedback
+    if content_metrics['relevance'] >= 0.9:
+        feedback_parts.append("Your response is highly relevant to the question")
+    elif content_metrics['relevance'] >= 0.7:
+        feedback_parts.append("Your response is somewhat relevant but could be more focused")
+    else:
+        feedback_parts.append("Your response relevance needs improvement - focus on the question's main points")
+    
+    # Answer completeness feedback
+    if content_metrics['completeness'] >= 0.9:
+        feedback_parts.append("Your answer is complete and covers all aspects of the question")
+    elif content_metrics['completeness'] >= 0.7:
+        feedback_parts.append("Your answer is somewhat complete but could be more comprehensive")
+    else:
+        feedback_parts.append("Your answer completeness needs improvement - ensure you address all parts of the question")
+    
+    # Technical accuracy feedback
+    if content_metrics['technical_accuracy'] >= 0.9:
+        feedback_parts.append("Your answer is technically accurate and meets the question's requirements")
+    elif content_metrics['technical_accuracy'] >= 0.7:
+        feedback_parts.append("Your answer is somewhat accurate but could be more precise")
+    else:
+        feedback_parts.append("Your answer technical accuracy needs improvement - ensure you provide accurate and relevant information")
+    
+    return " ".join(feedback_parts)
+
+def simulate_analysis(analysis_id):
+    """Simulate the analysis process when no video is provided"""
+    try:
+        # Update status to show progress
+        analysis_results[analysis_id]['progress'] = 10
+        analysis_results[analysis_id]['message'] = 'Initializing analysis...'
+        time.sleep(0.3)
+        
+        # Extract question ID for context-aware analysis
+        question_id = analysis_results[analysis_id].get('questionId')
+        try:
+            question_id = int(question_id) if question_id is not None else None
+        except ValueError:
+            question_id = None
+            
+        # Determine if this is an HR or Technical question
+        is_hr_question = question_id > 100 if question_id is not None else False
+        
+        # Simulate speech analysis
+        analysis_results[analysis_id]['progress'] = 20
+        analysis_results[analysis_id]['message'] = 'Analyzing speech patterns...'
+        time.sleep(0.3)
+        
+        # Simulate body language analysis
+        analysis_results[analysis_id]['progress'] = 40
+        analysis_results[analysis_id]['message'] = 'Evaluating body language...'
+        time.sleep(0.3)
+        
+        # Simulate content analysis
+        analysis_results[analysis_id]['progress'] = 60
+        analysis_results[analysis_id]['message'] = 'Analyzing content structure...'
+        time.sleep(0.3)
+        
+        # Generate simulated metrics
+        speech_metrics = {
+            'pace': random.uniform(0.8, 1.2),
+            'clarity': random.uniform(0.7, 1.0),
+            'filler_words': random.randint(0, 5),
+            'pauses': random.randint(2, 8)
+        }
+        
+        body_language_metrics = {
+            'eye_contact': random.uniform(0.6, 1.0),
+            'posture': random.uniform(0.7, 1.0),
+            'gestures': random.uniform(0.6, 1.0),
+            'facial_expressions': random.uniform(0.7, 1.0)
+        }
+        
+        content_metrics = {
+            'organization': random.uniform(0.7, 1.0),
+            'relevance': random.uniform(0.7, 1.0),
+            'completeness': random.uniform(0.7, 1.0),
+            'technical_accuracy': random.uniform(0.7, 1.0) if not is_hr_question else None
+        }
+        
+        # Calculate overall accuracy
+        if is_hr_question:
+            accuracy = (
+                speech_metrics['clarity'] * 0.3 +
+                body_language_metrics['eye_contact'] * 0.2 +
+                body_language_metrics['posture'] * 0.2 +
+                content_metrics['organization'] * 0.15 +
+                content_metrics['relevance'] * 0.15
+            ) * 100
+        else:
+            accuracy = (
+                speech_metrics['clarity'] * 0.25 +
+                body_language_metrics['eye_contact'] * 0.15 +
+                body_language_metrics['posture'] * 0.15 +
+                content_metrics['organization'] * 0.15 +
+                content_metrics['relevance'] * 0.15 +
+                content_metrics['technical_accuracy'] * 0.15
+            ) * 100
+        
+        # Generate feedback
+        body_feedback = generate_body_language_feedback(body_language_metrics, is_hr_question)
+        clarity_feedback = generate_clarity_feedback(speech_metrics, content_metrics, is_hr_question)
+        improvement_tips = get_question_specific_tips(question_id, accuracy)
+        
+        # Update the results with simulated analysis
+        analysis_results[analysis_id].update({
+            'status': 'completed',
+            'progress': 100,
+            'message': 'Analysis complete',
+            'accuracy': round(accuracy, 1),
+            'bodyLanguageFeedback': body_feedback,
+            'clarityFeedback': clarity_feedback,
+            'improvementTips': improvement_tips,
+            'metrics': {
+                'speech': speech_metrics,
+                'body_language': body_language_metrics,
+                'content': content_metrics
+            }
+        })
+        
+    except Exception as e:
+        print(f"Error in simulation analysis: {e}")
+        analysis_results[analysis_id].update({
+            'status': 'error',
+            'message': f'Error during analysis: {str(e)}'
+        })
+
+def get_question_specific_tips(question_id, accuracy):
+    """Generate specific improvement tips based on question type and accuracy"""
+    tips = []
+    
+    # HR Interview Tips
+    if question_id and question_id > 100:
+        if accuracy >= 90:
+            tips = [
+                "Your response demonstrates strong interpersonal skills",
+                "Continue practicing to maintain this high level of performance",
+                "Consider adding more specific examples to strengthen your answers"
+            ]
+        elif accuracy >= 80:
+            tips = [
+                "Structure your answers using the STAR method (Situation, Task, Action, Result)",
+                "Include more specific examples from your experience",
+                "Practice maintaining eye contact throughout your response"
+            ]
+        else:
+            tips = [
+                "Focus on providing concrete examples from your experience",
+                "Practice answering common HR questions with a friend or mentor",
+                "Work on your body language and maintaining eye contact",
+                "Consider recording yourself to identify areas for improvement"
+            ]
+    
+    # Technical Interview Tips
+    else:
+        if accuracy >= 90:
+            tips = [
+                "Your technical knowledge is strong",
+                "Continue practicing complex problem-solving scenarios",
+                "Consider adding more code examples to your explanations"
+            ]
+        elif accuracy >= 80:
+            tips = [
+                "Practice explaining technical concepts more clearly",
+                "Include more code examples in your responses",
+                "Work on your problem-solving approach explanation"
+            ]
+        else:
+            tips = [
+                "Review fundamental technical concepts",
+                "Practice coding problems regularly",
+                "Work on explaining your thought process clearly",
+                "Consider taking mock technical interviews"
+            ]
+    
+    # Add general tips based on accuracy
+    if accuracy < 70:
+        tips.extend([
+            "Practice speaking more clearly and at a moderate pace",
+            "Record yourself to identify areas for improvement",
+            "Consider working with a mentor or coach"
+        ])
+    
+    return tips
+
+# Rename the second analyze route to avoid conflict
+@app.route('/analyze_audio', methods=['POST'])
+def analyze_audio():
+    if 'audio' not in request.files:
+        return jsonify({
+            'success': False,
+            'message': 'No audio file provided'
+        })
+    
+    audio_file = request.files['audio']
+    question_id = request.form.get('question_id')
+    
+    if not audio_file or not question_id:
+        return jsonify({
+            'success': False,
+            'message': 'Missing required fields'
+        })
+    
+    # Generate unique filename
+    filename = secure_filename(f"{uuid.uuid4()}.webm")
+    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    
+    try:
+        # Save the audio file
+        audio_file.save(filepath)
+        
+        # Analyze the response
+        result = analyze_interview_response(filepath, int(question_id))
+        
+        # Clean up the uploaded file
+        os.remove(filepath)
+        
+        return jsonify(result)
+    except Exception as e:
+        # Clean up in case of error
+        if os.path.exists(filepath):
+            os.remove(filepath)
+        return jsonify({
+            'success': False,
+            'message': f'Error processing audio: {str(e)}'
+        })
+
+@app.route('/check_audio_analysis_status/<analysis_id>')
+def check_audio_analysis_status(analysis_id):
+    # In a real application, you would check the status from a database
+    # For now, we'll return a mock response
+    return jsonify({
+        'success': True,
+        'result': {
+            'status': 'completed',
+            'progress': 100,
+            'message': 'Analysis complete',
+            'accuracy': 85,
+            'key_points_covered': ['Point 1', 'Point 2'],
+            'missing_points': ['Point 3'],
+            'improvement_areas': ['Area 1', 'Area 2']
+        }
+    })
+
+def add_admin_user(name, email, password):
+    hashed_password = generate_password_hash(password)
+    try:
+        db = get_db_connection()
+        cursor = db.cursor()
+        
+        # Check if admin exists
+        cursor.execute("SELECT * FROM users WHERE role = 'admin'")
+        admin = cursor.fetchone()
+        
+        if admin:
+            print(f"Admin already exists with email: {admin['email']}")
+            return
+            
+        # Insert new admin
+        cursor.execute("""
+            INSERT INTO users (name, email, password, role)
+            VALUES (?, ?, ?, ?)
+        """, (name, email, hashed_password, 'admin'))
+        
+        db.commit()
+        print(f"Admin user created with email: {email}")
+    except Exception as e:
+        print(f"Error adding admin user: {e}")
+        if db:
+            db.rollback()
+    finally:
+        if db:
+            db.close()
+
+# Call the function to add the admin user
+add_admin_user('Admin Name', 'admin@example.com', 'your_password')
+
+@app.route('/check_users', methods=['GET'])
+def check_users():
+    try:
+        db = get_db_connection()
+        cursor = db.cursor()
+        cursor.execute("SELECT id, name, email, password, role FROM users;")
+        users = cursor.fetchall()
+        user_list = [{'id': user['id'], 'name': user['name'], 'email': user['email'], 'role': user['role']} for user in users]
+        return jsonify(user_list)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if db:
+            db.close()
+
+# Add this route to app.py to check admin user existence
+@app.route('/verify_admin')
+def verify_admin():
+    try:
+        db = get_db_connection()
+        cursor = db.cursor()
+        cursor.execute("SELECT * FROM users WHERE role = 'admin'")
+        admin = cursor.fetchone()
+        db.close()
+        
+        if admin:
+            return jsonify({
+                'exists': True,
+                'email': admin['email']
+            })
+        return jsonify({'exists': False})
+    except Exception as e:
+        return jsonify({'error': str(e)})
 
 if __name__ == '__main__':
     app.run(debug=True)

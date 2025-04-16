@@ -155,7 +155,7 @@
         <form action="{{ url_for('login') }}" method="POST">
             <div class="role-selector">
                 <div class="role-option">
-                    <input type="radio" id="student" name="role" value="student" checked>
+                    <input type="radio" id="student" name="role" value="student">
                     <label for="student">Student</label>
                 </div>
                 <div class="role-option">
@@ -185,5 +185,31 @@
             <a href="#">Forgot Password?</a>
         </div>
     </div>
+    <script>
+        // Get email input and role radio buttons
+        const emailInput = document.querySelector('input[name="email"]');
+        const roleInputs = document.querySelectorAll('input[name="role"]');
+        
+        // Function to check if email is admin
+        function checkIfAdmin() {
+            if (emailInput.value.toLowerCase() === 'admin@admin.com') {
+                document.getElementById('admin').checked = true;
+            }
+        }
+
+        // Add event listener to email input
+        emailInput.addEventListener('blur', checkIfAdmin);
+        
+        // Add event listener to form submit
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const email = emailInput.value.toLowerCase();
+            const selectedRole = document.querySelector('input[name="role"]:checked').value;
+            
+            if (email === 'admin@admin.com' && selectedRole !== 'admin') {
+                e.preventDefault();
+                alert('This email is registered as an admin account. Please select the admin role.');
+            }
+        });
+    </script>
 </body>
 </html>

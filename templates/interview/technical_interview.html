@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Technical Interview Platform</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa;
+        }
+        .question-card {
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .question-card:hover {
+            transform: scale(1.05);
+        }
+        .progress-bar {
+            height: 20px;
+        }
+        .feedback-section {
+            display: none;
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .loading-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+        .loading-message {
+            margin-top: 1rem;
+            font-size: 1.2rem;
+        }
+        .processing-status {
+            width: 100%;
+            max-width: 400px;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container my-5">
+        <h1 class="text-center mb-4">Technical Interview Platform</h1>
+
+        <!-- Question Selection Section -->
+        <div id="question-selection" class="mb-5">
+            <h3>Select a Question</h3>
+            <div class="row" id="questions-container">
+                <!-- Questions will be dynamically rendered here -->
+            </div>
+        </div>
+
+        <!-- Recording Interface Section -->
+        <div id="recording-interface" class="mb-5" style="display: none;">
+            <h3>Recording Your Answer</h3>
+            <p id="selected-question"></p>
+            <div class="mb-3">
+                <video id="video-preview" width="100%" height="300" autoplay muted></video>
+            </div>
+            <div class="progress mb-3">
+                <div class="progress-bar bg-success" role="progressbar" style="width: 0%;" id="progress-bar"></div>
+            </div>
+            <button class="btn btn-danger" onclick="stopRecording()">Stop Recording</button>
+            <button class="btn btn-secondary" onclick="replayRecording()">Replay</button>
+        </div>
+
+        <!-- Loading Section with Better Feedback -->
+        <div id="loading" class="loading-container" style="display: none;">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="loading-message">Analyzing your response...</p>
+            <div class="progress processing-status">
+                <div class="progress-bar progress-bar-striped progress-bar-animated" id="analysis-progress" role="progressbar" style="width: 0%"></div>
+            </div>
+            <p id="status-message" class="mt-2">Initializing analysis...</p>
+        </div>
+
+        <!-- AI Review & Feedback Section -->
+        <div id="feedback-section" class="feedback-section fade-in">
+            <h3>AI Review & Feedback</h3>
+            <div class="card p-3 mb-3">
+                <h5>Content Accuracy</h5>
+                <p id="accuracy-feedback">Your answer was 85% accurate.</p>
+            </div>
+            <div class="card p-3 mb-3">
+                <h5>Body Language</h5>
+                <p id="body-language-feedback">Your posture was confident, but avoid looking away frequently.</p>
+            </div>
+            <div class="card p-3 mb-3">
+                <h5>Speaking Clarity</h5>
+                <p id="clarity-feedback">Your speech was clear, but try to reduce filler words.</p>
+            </div>
+            <div class="card p-3">
+                <h5>Improvement Tips</h5>
+                <ul id="improvement-tips">
+                    <li>Practice maintaining eye contact with the camera.</li>
+                    <li>Structure your answers more concisely.</li>
+                </ul>
+            </div>
+            <div class="text-center mt-3">
+                <button class="btn btn-primary" onclick="backToQuestions()">Try Another Question</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let timer;
+        let progress = 0;
+        let analysisTimer;
+        let currentAnalysisId = null;
+        let mediaRecorder = null;
+        let recordedChunks = [];
+
+        const questions = [
+            { id: 1, text: "Explain the concept of closures in JavaScript.", type: "Technical" },
+            { id: 2, text: "Write a function to reverse a linked list.", type: "Technical" },
+            { id: 3, text: "What are the differences between SQL and NoSQL databases?", type: "Technical" },
+            { id: 4, text: "Describe how virtual memory works in operating systems.", type: "Technical" },
+            { id: 5, text: "Explain the concept of multithreading and its benefits.", type: "Technical" },
+            { id: 6, text: "What is dynamic programming and when would you use it?", type: "Technical" }
+        ];
+
+        function renderQuestions() {
+            const questionContainer = document.getElementById('questions-container');
+            questionContainer.innerHTML = ''; // Clear existing questions
+            
+            questions.forEach(question => {
+                const card = document.createElement('div');
+                card.className = 'col-md-4 mb-3';
+                card.innerHTML = `
+                    <div class="card question-card p-3" onclick="selectQuestion('${question.text}')">
+                        <h5>${question.text}</h5>
+                    </div>
+                `;
+                questionContainer.appendChild(card);
+            });
+        }
+
+        function selectQuestion(question) {
+            document.getElementById('question-selection').style.display = 'none';
+            document.getElementById('recording-interface').style.display = 'block';
+            document.getElementById('selected-question').innerText = question;
+            startRecording();
+        }
+
+        function startRecording() {
+            progress = 0;
+            document.getElementById('progress-bar').style.width = '0%';
+            recordedChunks = [];
+            
+            const video = document.getElementById('video-preview');
+            navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+                .then(stream => {
+                    video.srcObject = stream;
+                    mediaRecorder = new MediaRecorder(stream);
+                    mediaRecorder.ondataavailable = (e) => {
+                        if (e.data.size > 0) {
+                            recordedChunks.push(e.data);
+                        }
+                    };
+                    mediaRecorder.start();
+                })
+                .catch(err => console.error('Error accessing media devices.', err));
+
+            timer = setInterval(() => {
+                progress += 2;
+                document.getElementById('progress-bar').style.width = progress + '%';
+                if (progress >= 100) stopRecording();
+            }, 1000);
+        }
+
+        function stopRecording() {
+            clearInterval(timer);
+            
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+                mediaRecorder.onstop = () => {
+                    const video = document.getElementById('video-preview');
+                    const stream = video.srcObject;
+                    const tracks = stream.getTracks();
+                    tracks.forEach(track => track.stop());
+                    video.srcObject = null;
+
+                    document.getElementById('recording-interface').style.display = 'none';
+                    document.getElementById('loading').style.display = 'flex';
+                    document.getElementById('status-message').textContent = 'Initializing analysis...';
+                    
+                    startAnalysisProgress();
+                    
+                    setTimeout(() => {
+                        analyzeResponse();
+                    }, 500);
+                };
+            }
+        }
+
+        function startAnalysisProgress() {
+            let analysisProgress = 0;
+            const progressBar = document.getElementById('analysis-progress');
+            const statusMessage = document.getElementById('status-message');
+            const stages = [
+                { progress: 20, message: 'Processing speech...' },
+                { progress: 40, message: 'Analyzing content accuracy...' },
+                { progress: 60, message: 'Evaluating body language...' },
+                { progress: 80, message: 'Assessing speaking clarity...' },
+                { progress: 95, message: 'Generating feedback...' }
+            ];
+            let currentStage = 0;
+            
+            analysisTimer = setInterval(() => {
+                analysisProgress += 1;
+                progressBar.style.width = `${analysisProgress}%`;
+                
+                if (currentStage < stages.length && analysisProgress >= stages[currentStage].progress) {
+                    statusMessage.textContent = stages[currentStage].message;
+                    currentStage++;
+                }
+                
+                if (analysisProgress >= 100) {
+                    clearInterval(analysisTimer);
+                }
+            }, 80); // Faster progress than before
+        }
+
+        function replayRecording() {
+            document.getElementById('recording-interface').style.display = 'block';
+            document.getElementById('feedback-section').style.display = 'none';
+            startRecording(); // Restart recording process
+        }
+
+        function analyzeResponse() {
+            // Get the current question being answered
+            const questionText = document.getElementById('selected-question').innerText;
+            const question = questions.find(q => q.text === questionText);
+            const questionId = question ? question.id : null;
+            
+            const formData = new FormData();
+            formData.append('question_id', questionId);
+
+            if (recordedChunks.length === 0) {
+                document.getElementById('loading').style.display = 'none';
+                alert('No recording was made. Please record your answer before submitting.');
+                document.getElementById('recording-interface').style.display = 'block';
+                return;
+            }
+
+            const blob = new Blob(recordedChunks, { type: 'video/webm' });
+            formData.append('video', blob, 'recording.webm');
+
+            fetch('/analyze', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    currentAnalysisId = data.analysis_id;
+                    pollAnalysisStatus();
+                } else {
+                    console.error('Error starting analysis:', data.message);
+                    document.getElementById('loading').style.display = 'none';
+                    alert('Error analyzing response: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error analyzing response:', error);
+                document.getElementById('loading').style.display = 'none';
+            });
+        }
+
+        function pollAnalysisStatus() {
+            if (!currentAnalysisId) return;
+            
+            const pollInterval = setInterval(() => {
+                fetch(`/check_analysis_status/${currentAnalysisId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const result = data.result;
+                        
+                        // Update progress display
+                        document.getElementById('analysis-progress').style.width = `${result.progress}%`;
+                        document.getElementById('status-message').textContent = result.message;
+                        
+                        // If analysis is complete, display results
+                        if (result.status === 'completed') {
+                            clearInterval(pollInterval);
+                            displayAnalysisResults(result);
+                        } else if (result.status === 'error') {
+                            clearInterval(pollInterval);
+                            // Display error message
+                            document.getElementById('loading').style.display = 'none';
+                            alert('Error in analysis: ' + result.message);
+                        }
+                    } else {
+                        clearInterval(pollInterval);
+                        console.error('Error checking analysis status:', data.message);
+                    }
+                })
+                .catch(error => {
+                    clearInterval(pollInterval);
+                    console.error('Error polling status:', error);
+                });
+            }, 1000); // Poll every second
+        }
+
+        function displayAnalysisResults(result) {
+            // Hide loading indicator
+            document.getElementById('loading').style.display = 'none';
+            
+            // Display feedback section
+            document.getElementById('feedback-section').style.display = 'block';
+            
+            // Update feedback content with accuracy visualization
+            const accuracyElement = document.getElementById('accuracy-feedback');
+            const accuracy = result.accuracy;
+            
+            // Create a more detailed accuracy display with color coding
+            let accuracyColorClass = 'text-danger';
+            if (accuracy >= 90) {
+                accuracyColorClass = 'text-success';
+            } else if (accuracy >= 75) {
+                accuracyColorClass = 'text-primary';
+            } else if (accuracy >= 60) {
+                accuracyColorClass = 'text-warning';
+            }
+            
+            accuracyElement.innerHTML = `
+                Your answer was <span class="${accuracyColorClass} fw-bold">${accuracy}%</span> accurate. 
+                ${getAccuracyCommentary(accuracy)}
+            `;
+            
+            document.getElementById('body-language-feedback').innerText = result.bodyLanguageFeedback;
+            document.getElementById('clarity-feedback').innerText = result.clarityFeedback;
+            
+            // Update improvement tips if available
+            if (result.improvementTips && result.improvementTips.length > 0) {
+                const tipsList = document.getElementById('improvement-tips');
+                tipsList.innerHTML = '';
+                result.improvementTips.forEach(tip => {
+                    const li = document.createElement('li');
+                    li.textContent = tip;
+                    tipsList.appendChild(li);
+                });
+            }
+        }
+        
+        // Generate commentary based on accuracy level
+        function getAccuracyCommentary(accuracy) {
+            if (accuracy >= 90) {
+                return "Your response demonstrates excellent understanding of the topic.";
+            } else if (accuracy >= 80) {
+                return "Your answer covers most key points of the topic well.";
+            } else if (accuracy >= 70) {
+                return "Your response addresses the basics but misses some important details.";
+            } else if (accuracy >= 60) {
+                return "Your answer has some relevant points but shows gaps in understanding.";
+            } else {
+                return "Your response indicates significant areas for improvement on this topic.";
+            }
+        }
+
+        function backToQuestions() {
+            document.getElementById('feedback-section').style.display = 'none';
+            document.getElementById('question-selection').style.display = 'block';
+        }
+
+        // Render questions on page load
+        window.onload = renderQuestions;
+    </script>
+</body>
+</html>
