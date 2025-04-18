@@ -1,5 +1,5 @@
 import traceback
-from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify, send_file
 import sqlite3
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timezone
@@ -10,7 +10,11 @@ import json
 import uuid
 import random
 from werkzeug.utils import secure_filename
+<<<<<<< HEAD
 from analysis import analyze_interview_response
+=======
+from analysis import analyze_interview_response, convert_audio_to_text, compare_answers
+>>>>>>> ecfd4dffffe076ca6ba48fffe74e6d4f3d92b9b1
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
@@ -33,12 +37,174 @@ sqlite3.register_converter("timestamp", convert_datetime)
 # SQLite Configuration
 def get_db_connection():
     try:
-        conn = sqlite3.connect('placement_preparation.db', timeout=20, detect_types=sqlite3.PARSE_DECLTYPES)
+        conn = sqlite3.connect('placement_preparation.db', timeout=60, detect_types=sqlite3.PARSE_DECLTYPES)
         conn.row_factory = sqlite3.Row
         return conn
     except sqlite3.Error as e:
         print(f"Database connection error: {e}")
         raise
+
+# Ensure the 'id' column exists in required tables
+def ensure_id_column():
+    """Ensure the 'id' column exists in required tables."""
+    try:
+        db = get_db_connection()
+        cursor = db.cursor()
+
+        # Ensure 'id' column in 'users' table
+        cursor.execute("PRAGMA table_info(users)")
+        columns = [row['name'] for row in cursor.fetchall()]
+        if 'id' not in columns:
+            cursor.execute("ALTER TABLE users ADD COLUMN id INTEGER PRIMARY KEY AUTOINCREMENT")
+            print("Added 'id' column to 'users' table.")
+
+        # Ensure 'id' column in 'students' table
+        cursor.execute("PRAGMA table_info(students)")
+        columns = [row['name'] for row in cursor.fetchall()]
+        if 'id' not in columns:
+            cursor.execute("ALTER TABLE students ADD COLUMN id INTEGER PRIMARY KEY AUTOINCREMENT")
+            print("Added 'id' column to 'students' table.")
+
+        # Add similar checks for other tables if needed
+        db.commit()
+    except Exception as e:
+        print(f"Error ensuring 'id' column: {e}")
+    finally:
+        if db:
+            db.close()
+
+def ensure_id_columns():
+    """Ensure the 'id' column exists in required tables."""
+    try:
+        db = get_db_connection()
+        cursor = db.cursor()
+
+        # Ensure 'id' column in 'questions' table
+        cursor.execute("PRAGMA table_info(questions)")
+        columns = [row['name'] for row in cursor.fetchall()]
+        if 'id' not in columns:
+            # Create a new table with the correct schema
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS questions_new (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    question_text TEXT NOT NULL,
+                    correct_answer TEXT
+                )
+            """)
+            # Migrate data from the old table to the new table
+            cursor.execute("INSERT INTO questions_new (question_text, correct_answer) SELECT question_text, correct_answer FROM questions")
+            # Drop the old table and rename the new table
+            cursor.execute("DROP TABLE questions")
+            cursor.execute("ALTER TABLE questions_new RENAME TO questions")
+            print("Recreated 'questions' table with 'id' column.")
+
+        # Ensure 'id' column in 'users' table
+        cursor.execute("PRAGMA table_info(users)")
+        columns = [row['name'] for row in cursor.fetchall()]
+        if 'id' not in columns:
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS users_new (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    email TEXT NOT NULL UNIQUE,
+                    password TEXT NOT NULL,
+                    role TEXT NOT NULL
+                )
+            """)
+            cursor.execute("INSERT INTO users_new (name, email, password, role) SELECT name, email, password, role FROM users")
+            cursor.execute("DROP TABLE users")
+            cursor.execute("ALTER TABLE users_new RENAME TO users")
+            print("Recreated 'users' table with 'id' column.")
+
+        # Ensure 'id' column in 'students' table
+        cursor.execute("PRAGMA table_info(students)")
+        columns = [row['name'] for row in cursor.fetchall()]
+        if 'id' not in columns:
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS students_new (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    name TEXT NOT NULL,
+                    email TEXT NOT NULL,
+                    phone TEXT,
+                    department TEXT,
+                    graduation_year INTEGER
+                )
+            """)
+            cursor.execute("INSERT INTO students_new (user_id, name, email, phone, department, graduation_year) SELECT user_id, name, email, phone, department, graduation_year FROM students")
+            cursor.execute("DROP TABLE students")
+            cursor.execute("ALTER TABLE students_new RENAME TO students")
+            print("Recreated 'students' table with 'id' column.")
+
+        # Add similar checks for other tables if needed
+        db.commit()
+    except Exception as e:
+        print(f"Error ensuring 'id' column: {e}")
+    finally:
+        if db:
+            db.close()
+
+def ensure_questions_table_id_column():
+    """Ensure the 'id' column exists in the 'questions' table."""
+    try:
+        db = get_db_connection()
+        cursor = db.cursor()
+
+        # Check if 'id' column exists in 'questions' table
+        cursor.execute("PRAGMA table_info(questions)")
+        columns = [row['name'] for row in cursor.fetchall()]
+        if 'id' not in columns:
+            cursor.execute("ALTER TABLE questions ADD COLUMN id INTEGER PRIMARY KEY AUTOINCREMENT")
+            print("Added 'id' column to 'questions' table.")
+
+        db.commit()
+    except Exception as e:
+        print(f"Error ensuring 'id' column in 'questions' table: {e}")
+    finally:
+        if db:
+            db.close()
+
+def initialize_questions_table():
+    """Ensure the 'questions' table is populated with sample data."""
+    try:
+        db = get_db_connection()
+        cursor = db.cursor()
+
+        # Check if the 'questions' table is empty
+        cursor.execute("SELECT COUNT(*) FROM questions")
+        count = cursor.fetchone()[0]
+
+        if count == 0:
+            # Insert sample questions and answers
+            cursor.executemany("""
+                INSERT INTO questions (question_text, correct_answer) 
+                VALUES (?, ?)
+            """, [
+                ("Tell me about yourself.", "I am a [your role] with [X] years of experience in [industry/field]. I have expertise in [key skills] and have worked on [notable projects/achievements]. I'm passionate about [relevant interests] and am looking to [career goals]."),
+                ("What are your strengths and weaknesses?", "My strengths include [list 2-3 key strengths with examples]. As for weaknesses, I'm working on [mention a genuine area of improvement] and have taken steps like [specific actions] to address it."),
+                ("Why do you want to work here?", "I want to work here because [company name] is known for [specific company strengths/values]. I'm particularly interested in [specific aspects of the company] and believe my skills in [relevant skills] align well with the role."),
+                ("Describe a situation where you had to deal with a difficult coworker.", "In a previous role, I dealt with a difficult coworker by [specific approach]. I focused on [key actions taken] and the outcome was [positive result]. This taught me the importance of [key learning]."),
+                ("What are your career goals for the next five years?", "My career goals include [specific short-term goals] and [long-term aspirations]. I plan to achieve these through [specific steps/strategies]."),
+                ("Tell me about a time you failed at something and what you learned.", "A significant failure I experienced was [describe situation]. From this, I learned [key lessons] and implemented [specific changes] to prevent similar issues in the future."),
+                ("Explain the concept of closures in JavaScript.", "Closures in JavaScript are functions that have access to variables in their outer scope, even after the outer function has returned. They're useful for [specific use cases] and help maintain [specific benefits]."),
+                ("Write a function to reverse a linked list.", "To reverse a linked list, you need to [algorithm steps]. The time complexity is O(n) and space complexity is O(1). Here's how it works: [explanation]"),
+                ("What are the differences between SQL and NoSQL databases?", "SQL databases are [characteristics] while NoSQL databases are [characteristics]. The main differences are [key differences] and each is better suited for [specific use cases]."),
+                ("Describe how virtual memory works in operating systems.", "Virtual memory works by [explanation]. The key components are [components] and it provides benefits like [benefits]."),
+                ("Explain the concept of multithreading and its benefits.", "Multithreading allows [explanation]. The benefits include [benefits] and it's particularly useful for [use cases]."),
+                ("What is dynamic programming and when would you use it?", "Dynamic programming is [explanation]. It's best used when [conditions] and involves [key steps]. The main advantages are [advantages].")
+            ])
+            print("Initialized 'questions' table with sample data.")
+
+        db.commit()
+    except Exception as e:
+        print(f"Error initializing 'questions' table: {e}")
+    finally:
+        if db:
+            db.close()
+
+# Ensure all necessary columns exist during app initialization
+ensure_id_columns()
+initialize_questions_table()
 
 # Home/Login Page
 @app.route('/')
@@ -1350,35 +1516,6 @@ def init_mock_progress():
                 INSERT OR IGNORE INTO progress_topics 
                 (topic_id, topic_name, parent_topic, description, total_questions) 
                 VALUES 
-                (101, 'Time and Work', 'Aptitude', 'Problems related to time and work', 10),
-                (102, 'Percentages', 'Aptitude', 'Percentage calculations', 10),
-                (103, 'Probability', 'Aptitude', 'Probability problems', 10)
-            """)
-            
-        # Check if communication topics exist
-        cursor.execute("SELECT COUNT(*) FROM progress_topics WHERE parent_topic = 'Communication'")
-        comm_topic_count = cursor.fetchone()[0]
-        
-        if comm_topic_count == 0:
-            # Create some communication topics if none exist
-            cursor.execute("""
-                INSERT OR IGNORE INTO progress_topics 
-                (topic_id, topic_name, parent_topic, description, total_questions) 
-                VALUES 
-                (201, 'Verbal Skills', 'Communication', 'Verbal communication', 10),
-                (202, 'Writing Skills', 'Communication', 'Written communication', 10),
-                (203, 'Presentation', 'Communication', 'Presentation skills', 10)
-            """)
-        
-        # Add some mock student answers for Aptitude topics
-        cursor.execute("""
-            INSERT OR IGNORE INTO student_answers 
-            (student_id, question_id, topic_id, given_answer, is_correct) 
-            VALUES 
-            (?, 1, 101, 'answer1', 1),
-            (?, 2, 101, 'answer2', 1),
-            (?, 3, 101, 'answer3', 1),
-            (?, 1, 102, 'answer1', 1),
             (?, 2, 102, 'answer2', 1)
         """, (student_id, student_id, student_id, student_id, student_id))
         
@@ -1893,13 +2030,18 @@ def analyze():
             os.makedirs('temp')
         
         # Include question ID in filename if available
+<<<<<<< HEAD
         if (question_id):
+=======
+        if question_id:
+>>>>>>> ecfd4dffffe076ca6ba48fffe74e6d4f3d92b9b1
             video_path = f'temp/{analysis_id}_question_{question_id}_{video_file.filename}'
         else:
             video_path = f'temp/{analysis_id}_{video_file.filename}'
             
         video_file.save(video_path)
         
+<<<<<<< HEAD
         # Start analysis in a separate thread
         thread = threading.Thread(
             target=process_video_analysis, 
@@ -1912,6 +2054,37 @@ def analyze():
             'success': True, 
             'message': 'Analysis started', 
             'analysis_id': analysis_id
+=======
+        # Fetch the correct answer for the question from the database
+        db = get_db_connection()
+        cursor = db.cursor()
+        cursor.execute("SELECT correct_answer FROM questions WHERE id = ?", (question_id,))
+        correct_answer = cursor.fetchone()
+        db.close()
+
+        if not correct_answer:
+            return jsonify({
+                'success': False,
+                'message': 'Correct answer not found for the given question.'
+            }), 404
+
+        # Start analysis in a separate thread
+        thread = threading.Thread(
+            target=process_video_analysis, 
+            args=(analysis_id, video_path, correct_answer[0])
+        )
+        thread.daemon = True
+        thread.start()
+
+        # Include audio file URL in the response
+        audio_url = f"/uploads/{os.path.basename(video_path)}"
+
+        return jsonify({
+            'success': True, 
+            'message': 'Analysis started', 
+            'analysis_id': analysis_id,
+            'audio_url': audio_url
+>>>>>>> ecfd4dffffe076ca6ba48fffe74e6d4f3d92b9b1
         })
         
     except Exception as e:
@@ -1931,13 +2104,18 @@ def check_analysis_status(analysis_id):
         'result': analysis_results[analysis_id]
     })
 
+<<<<<<< HEAD
 def process_video_analysis(analysis_id, video_path):
+=======
+def process_video_analysis(analysis_id, video_path, correct_answer):
+>>>>>>> ecfd4dffffe076ca6ba48fffe74e6d4f3d92b9b1
     try:
         # Update status to show progress
         analysis_results[analysis_id]['progress'] = 10
         analysis_results[analysis_id]['message'] = 'Initializing video analysis...'
         time.sleep(0.3)
         
+<<<<<<< HEAD
         # Extract question ID for context-aware analysis
         question_id = analysis_results[analysis_id].get('questionId')
         try:
@@ -2020,10 +2198,22 @@ def process_video_analysis(analysis_id, video_path):
             os.remove(video_path)
         
         # Update the results with comprehensive analysis
+=======
+        # Simulate analysis and comparison with the correct answer
+        analysis_results[analysis_id]['progress'] = 50
+        analysis_results[analysis_id]['message'] = 'Comparing with the correct answer...'
+        time.sleep(0.3)
+
+        # Simulate comparison logic (replace with actual comparison logic)
+        similarity_score = random.uniform(0, 1) * 100  # Simulated similarity percentage
+
+        # Update the results with comparison details
+>>>>>>> ecfd4dffffe076ca6ba48fffe74e6d4f3d92b9b1
         analysis_results[analysis_id].update({
             'status': 'completed',
             'progress': 100,
             'message': 'Analysis complete',
+<<<<<<< HEAD
             'accuracy': round(accuracy, 1),
             'bodyLanguageFeedback': body_feedback,
             'clarityFeedback': clarity_feedback,
@@ -2034,6 +2224,15 @@ def process_video_analysis(analysis_id, video_path):
                 'content': content_metrics
             }
         })
+=======
+            'similarity_score': round(similarity_score, 1),
+            'correct_answer': correct_answer
+        })
+
+        # Clean up the temporary file
+        if os.path.exists(video_path):
+            os.remove(video_path)
+>>>>>>> ecfd4dffffe076ca6ba48fffe74e6d4f3d92b9b1
         
     except Exception as e:
         print(f"Error in processing video analysis: {e}")
@@ -2169,6 +2368,7 @@ def simulate_analysis(analysis_id):
             'gestures': random.uniform(0.6, 1.0),
             'facial_expressions': random.uniform(0.7, 1.0)
         }
+<<<<<<< HEAD
         
         content_metrics = {
             'organization': random.uniform(0.7, 1.0),
@@ -2195,6 +2395,23 @@ def simulate_analysis(analysis_id):
                 content_metrics['relevance'] * 0.15 +
                 content_metrics['technical_accuracy'] * 0.15
             ) * 100
+=======
+
+        content_metrics = {
+            'organization': random.uniform(0.7, 1.0),
+            'relevance': random.uniform(0.7, 1.0),
+            'technical_accuracy': random.uniform(0.7, 1.0)
+        }
+
+        accuracy = (
+            speech_metrics['clarity'] * 0.25 +
+            body_language_metrics['eye_contact'] * 0.15 +
+            body_language_metrics['posture'] * 0.15 +
+            content_metrics['organization'] * 0.15 +
+            content_metrics['relevance'] * 0.15 +
+            content_metrics['technical_accuracy'] * 0.15
+        ) * 100
+>>>>>>> ecfd4dffffe076ca6ba48fffe74e6d4f3d92b9b1
         
         # Generate feedback
         body_feedback = generate_body_language_feedback(body_language_metrics, is_hr_question)
@@ -2288,7 +2505,11 @@ def analyze_audio():
     if 'audio' not in request.files:
         return jsonify({
             'success': False,
+<<<<<<< HEAD
             'message': 'No audio file provided'
+=======
+            'message': 'No audio file provided. Please record your voice and upload the file.'
+>>>>>>> ecfd4dffffe076ca6ba48fffe74e6d4f3d92b9b1
         })
     
     audio_file = request.files['audio']
@@ -2297,7 +2518,11 @@ def analyze_audio():
     if not audio_file or not question_id:
         return jsonify({
             'success': False,
+<<<<<<< HEAD
             'message': 'Missing required fields'
+=======
+            'message': 'Missing required fields. Ensure both audio and question ID are provided.'
+>>>>>>> ecfd4dffffe076ca6ba48fffe74e6d4f3d92b9b1
         })
     
     # Generate unique filename
@@ -2314,7 +2539,15 @@ def analyze_audio():
         # Clean up the uploaded file
         os.remove(filepath)
         
+<<<<<<< HEAD
         return jsonify(result)
+=======
+        return jsonify({
+            'success': True,
+            'message': 'Audio analysis completed successfully.',
+            'result': result
+        })
+>>>>>>> ecfd4dffffe076ca6ba48fffe74e6d4f3d92b9b1
     except Exception as e:
         # Clean up in case of error
         if os.path.exists(filepath):
@@ -2341,6 +2574,7 @@ def check_audio_analysis_status(analysis_id):
         }
     })
 
+<<<<<<< HEAD
 def add_admin_user(name, email, password):
     hashed_password = generate_password_hash(password)
     try:
@@ -2367,10 +2601,40 @@ def add_admin_user(name, email, password):
         print(f"Error adding admin user: {e}")
         if db:
             db.rollback()
+=======
+@app.route('/fix_schema')
+def fix_schema():
+    try:
+        db = get_db_connection()
+        cursor = db.cursor()
+
+        # Check and fix the 'students' table
+        cursor.execute("PRAGMA table_info(students)")
+        columns = [row['name'] for row in cursor.fetchall()]
+        if 'id' not in columns:
+            cursor.execute("ALTER TABLE students ADD COLUMN id INTEGER PRIMARY KEY AUTOINCREMENT")
+            print("Added 'id' column to 'students' table.")
+
+        # Check and fix other related tables if necessary
+        # Example: Ensure 'id' exists in 'users' table
+        cursor.execute("PRAGMA table_info(users)")
+        columns = [row['name'] for row in cursor.fetchall()]
+        if 'id' not in columns:
+            cursor.execute("ALTER TABLE users ADD COLUMN id INTEGER PRIMARY KEY AUTOINCREMENT")
+            print("Added 'id' column to 'users' table.")
+
+        db.commit()
+        return jsonify({'success': True, 'message': 'Schema fixed successfully.'})
+    except Exception as e:
+        if db:
+            db.rollback()
+        return jsonify({'success': False, 'message': str(e)})
+>>>>>>> ecfd4dffffe076ca6ba48fffe74e6d4f3d92b9b1
     finally:
         if db:
             db.close()
 
+<<<<<<< HEAD
 # Call the function to add the admin user
 add_admin_user('Admin Name', 'admin@example.com', 'your_password')
 
@@ -2620,6 +2884,60 @@ def all_students_progress():
     finally:
         if 'db' in locals():
             db.close()
+=======
+@app.route('/transcribe_audio', methods=['POST'])
+def transcribe_audio():
+    """Handle audio transcription requests."""
+    try:
+        if 'audio' not in request.files:
+            return jsonify({
+                'success': False,
+                'message': 'No audio file provided'
+            })
+        
+        audio_file = request.files['audio']
+        if audio_file.filename == '':
+            return jsonify({
+                'success': False,
+                'message': 'No selected file'
+            })
+        
+        # Create a temporary directory if it doesn't exist
+        temp_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'temp')
+        os.makedirs(temp_dir, exist_ok=True)
+        
+        # Generate a unique filename
+        filename = f"temp_audio_{uuid.uuid4()}.webm"
+        filepath = os.path.join(temp_dir, filename)
+        
+        # Save the uploaded file
+        audio_file.save(filepath)
+        
+        try:
+            # Convert audio to text using the analysis module
+            text = convert_audio_to_text(filepath)
+            
+            # Clean up the temporary file
+            os.remove(filepath)
+            
+            return jsonify({
+                'success': True,
+                'text': text
+            })
+            
+        except Exception as e:
+            # Clean up the temporary file in case of error
+            if os.path.exists(filepath):
+                os.remove(filepath)
+            raise e
+            
+    except Exception as e:
+        print(f"Error in transcribe_audio: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': f'Error processing audio: {str(e)}'
+        })
+>>>>>>> ecfd4dffffe076ca6ba48fffe74e6d4f3d92b9b1
 
 if __name__ == '__main__':
     app.run(debug=True)
