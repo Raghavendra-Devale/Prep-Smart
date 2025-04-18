@@ -199,12 +199,14 @@ def get_student_progress():
                 'success': True,
                 'DSA': 0,
                 'Communication': 0,
-                'Aptitude': 0
+                'Aptitude': 0,
+                'total_completed': 0  # Added total completed questions
             }
             
         # Initialize counters
         completed_by_category = {'DSA': 0, 'Communication': 0, 'Aptitude': 0}
         total_by_category = {'DSA': 0, 'Communication': 0, 'Aptitude': 0}
+        total_completed = 0  # Counter for total completed questions
         
         # Count completed questions by category
         for topic in topics:
@@ -218,6 +220,7 @@ def get_student_progress():
             
             completed = cursor.fetchone()[0]
             completed_by_category[parent_topic] += completed
+            total_completed += completed  # Increment total completed questions
             
         print(f"Completed by Category: {completed_by_category}")
         print(f"Total by Category: {total_by_category}")
@@ -235,7 +238,8 @@ def get_student_progress():
         
         return {
             'success': True,
-            **progress_data
+            **progress_data,
+            'total_completed': total_completed  # Return total completed questions
         }
         
     except Exception as e:
@@ -1889,7 +1893,7 @@ def analyze():
             os.makedirs('temp')
         
         # Include question ID in filename if available
-        if question_id:
+        if (question_id):
             video_path = f'temp/{analysis_id}_question_{question_id}_{video_file.filename}'
         else:
             video_path = f'temp/{analysis_id}_{video_file.filename}'
@@ -2385,7 +2389,6 @@ def check_users():
         if db:
             db.close()
 
-# Add this route to app.py to check admin user existence
 @app.route('/verify_admin')
 def verify_admin():
     try:
@@ -2403,6 +2406,220 @@ def verify_admin():
         return jsonify({'exists': False})
     except Exception as e:
         return jsonify({'error': str(e)})
+
+@app.route('/registered_students')
+def registered_students():
+    return render_template('admin/registered_students.html')
+
+@app.route('/placement')
+def placement():
+    return render_template('admin/placement.html')
+
+@app.route('/companies')
+def companies():
+    return render_template('admin/companies.html')
+
+@app.route('/list_of_students')
+def list_of_students():
+    try:
+        db = get_db_connection()
+        cursor = db.cursor()
+
+        # Fetch all students from the database
+        cursor.execute("SELECT id, name, email, department FROM students")
+        students = cursor.fetchall()
+
+        student_list = []
+
+        for student in students:
+            student_id = student['id']
+
+            # Calculate overall progress for DSA
+            cursor.execute("""
+                SELECT SUM(sp.completed_questions) as completed, SUM(pt.total_questions) as total
+                FROM student_progress sp
+                JOIN progress_topics pt ON sp.topic_id = pt.topic_id
+                WHERE sp.student_id = ? AND pt.parent_topic = 'DSA'
+            """, (student_id,))
+            dsa_progress = cursor.fetchone()
+            dsa_completed = dsa_progress['completed'] or 0
+            dsa_total = dsa_progress['total'] or 0
+            dsa_percentage = (dsa_completed / dsa_total * 100) if dsa_total > 0 else 0
+
+            # Calculate overall progress for Aptitude
+            cursor.execute("""
+                SELECT SUM(sp.completed_questions) as completed, SUM(pt.total_questions) as total
+                FROM student_progress sp
+                JOIN progress_topics pt ON sp.topic_id = pt.topic_id
+                WHERE sp.student_id = ? AND pt.parent_topic = 'Aptitude'
+            """, (student_id,))
+            apti_progress = cursor.fetchone()
+            apti_completed = apti_progress['completed'] or 0
+            apti_total = apti_progress['total'] or 0
+            apti_percentage = (apti_completed / apti_total * 100) if apti_total > 0 else 0
+
+            # Calculate overall progress for Communication
+            cursor.execute("""
+                SELECT SUM(sp.completed_questions) as completed, SUM(pt.total_questions) as total
+                FROM student_progress sp
+                JOIN progress_topics pt ON sp.topic_id = pt.topic_id
+                WHERE sp.student_id = ? AND pt.parent_topic = 'Communication'
+            """, (student_id,))
+            comm_progress = cursor.fetchone()
+            comm_completed = comm_progress['completed'] or 0
+            comm_total = comm_progress['total'] or 0
+            comm_percentage = (comm_completed / comm_total * 100) if comm_total > 0 else 0
+
+            student_list.append({
+                'id': student['id'],
+                'name': student['name'],
+                'email': student['email'],
+                'course': student['department'],
+                'dsa_progress': round(dsa_percentage, 2),
+                'apti_progress': round(apti_percentage, 2),
+                'comm_progress': round(comm_percentage, 2)
+            })
+
+        return render_template('admin/list_of_students.html', students=student_list)
+    except Exception as e:
+        print(f"Error fetching students: {e}")
+        return "An error occurred while fetching the student list.", 500
+    finally:
+        if db:
+            db.close()
+
+@app.route('/student_status')
+def student_status():
+    return render_template('admin/student_status.html')
+
+@app.route('/company_status')
+def company_status():
+    return render_template('admin/company_status.html')
+
+@app.route('/resume')
+def resume():
+    return render_template('admin/resume.html')
+
+@app.route('/placed_students')
+def placed_students():
+    return render_template('admin/placed_students.html')
+
+@app.route('/preparation_status')
+def preparation_status():
+    return render_template('admin/preparation_status.html')
+
+@app.route('/view_resumes')
+def view_resumes():
+    resumes = [
+        {'name': 'Resume 1', 'file': 'resume/sample1.pdf'},
+        {'name': 'Resume 2', 'file': 'resume/resumeJava.pdf'},
+        {'name': 'Resume 3', 'file': 'resume/resumePython.pdf'},
+        {'name': 'Resume 4', 'file': 'resume/resumeGeneral.pdf'},
+    ]
+    return render_template('resume.html', resumes=resumes)  # ← not admin/resume.html
+
+@app.route('/all_students_progress', methods=['GET'])
+def all_students_progress():
+    try:
+        db = get_db_connection()
+        cursor = db.cursor()
+        
+        # Get search query from request args
+        search_query = request.args.get('search', '').strip()
+        selected_branch = request.args.get('branch', '').strip()  # Get selected branch
+        
+        # Fetch all branches from the database
+        cursor.execute("SELECT DISTINCT department FROM students")
+        branches = [row['department'] for row in cursor.fetchall()]
+
+        # Fetch all students with optional search and branch filter
+        if search_query:
+            cursor.execute("""
+                SELECT id, name FROM students 
+                WHERE (name LIKE ? OR id LIKE ?) AND (department = ? OR ? = '')
+            """, (f'%{search_query}%', f'%{search_query}%', selected_branch, selected_branch))
+        else:
+            cursor.execute("""
+                SELECT id, name FROM students 
+                WHERE department = ? OR ? = ''
+            """, (selected_branch, selected_branch))
+        
+        students = cursor.fetchall()
+        
+        progress_summary = []
+        
+        for student in students:
+            student_id = student['id']
+            student_name = student['name']
+            
+            # Get completed questions for each category
+            progress_data = {}
+            
+            # DSA Progress
+            cursor.execute("""
+                SELECT SUM(sp.completed_questions) as completed, SUM(pt.total_questions) as total
+                FROM student_progress sp
+                JOIN progress_topics pt ON sp.topic_id = pt.topic_id
+                WHERE sp.student_id = ? AND pt.parent_topic = 'DSA'
+            """, (student_id,))
+            dsa_progress = cursor.fetchone()
+            dsa_completed = dsa_progress['completed'] or 0
+            dsa_total = dsa_progress['total'] or 0
+            dsa_percentage = (dsa_completed / dsa_total * 100) if dsa_total > 0 else 0
+            progress_data['dsa'] = {
+                'completed': dsa_completed,
+                'total': dsa_total,
+                'percentage': round(dsa_percentage, 2)
+            }
+
+            # Aptitude Progress
+            cursor.execute("""
+                SELECT SUM(sp.completed_questions) as completed, SUM(pt.total_questions) as total
+                FROM student_progress sp
+                JOIN progress_topics pt ON sp.topic_id = pt.topic_id
+                WHERE sp.student_id = ? AND pt.parent_topic = 'Aptitude'
+            """, (student_id,))
+            apti_progress = cursor.fetchone()
+            apti_completed = apti_progress['completed'] or 0
+            apti_total = apti_progress['total'] or 0
+            apti_percentage = (apti_completed / apti_total * 100) if apti_total > 0 else 0
+            progress_data['apti'] = {
+                'completed': apti_completed,
+                'total': apti_total,
+                'percentage': round(apti_percentage, 2)
+            }
+
+            # Communication Progress
+            cursor.execute("""
+                SELECT SUM(sp.completed_questions) as completed, SUM(pt.total_questions) as total
+                FROM student_progress sp
+                JOIN progress_topics pt ON sp.topic_id = pt.topic_id
+                WHERE sp.student_id = ? AND pt.parent_topic = 'Communication'
+            """, (student_id,))
+            comm_progress = cursor.fetchone()
+            comm_completed = comm_progress['completed'] or 0
+            comm_total = comm_progress['total'] or 0
+            comm_percentage = (comm_completed / comm_total * 100) if comm_total > 0 else 0
+            progress_data['comm'] = {
+                'completed': comm_completed,
+                'total': comm_total,
+                'percentage': round(comm_percentage, 2)
+            }
+
+            progress_summary.append({
+                'student_id': student_id,
+                'student_name': student_name,
+                'progress': progress_data
+            })
+        
+        return render_template('admin/all_students_progress.html', progress_summary=progress_summary, search_query=search_query, branches=branches, selected_branch=selected_branch)
+        
+    except Exception as e:
+        print(f"Error fetching all students' progress: {e}")
+        return "An error occurred while fetching the student progress.", 500
+    finally:
+        if 'db' in locals():
+            db.close()
 
 if __name__ == '__main__':
     app.run(debug=True)

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>All Students Progress</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='assets/css/bootstrap.min.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>All Students Progress</h1>
+        
+        <!-- Search Form -->
+        <form method="GET" action="{{ url_for('all_students_progress') }}">
+            <div class="input-group mb-3">
+                <input type="text" class="form-control" name="search" placeholder="Search by name or ID" value="{{ search_query }}">
+                <div class="input-group-append">
+                    <button class="btn btn-outline-secondary" type="submit">Search</button>
+                </div>
+            </div>
+        </form>
+
+        <!-- Branch Selection -->
+        <form method="GET" action="{{ url_for('all_students_progress') }}">
+            <div class="form-group">
+                <label for="branch">Select Branch:</label>
+                <select class="form-control" id="branch" name="branch" onchange="this.form.submit()">
+                    <option value="">All</option>
+                    {% for branch in branches %}
+                        <option value="{{ branch }}" {% if branch == selected_branch %}selected{% endif %}>{{ branch }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </form>
+
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Aptitude Completed</th>
+                    <th>Aptitude Total</th>
+                    <th>Aptitude %</th>
+                    <th>DSA Completed</th>
+                    <th>DSA Total</th>
+                    <th>DSA %</th>
+                    <th>Communication Completed</th>
+                    <th>Communication Total</th>
+                    <th>Communication %</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for student in progress_summary %}
+                <tr>
+                    <td><a href="{{ url_for('student_progress', student_id=student.student_id) }}">{{ student.student_name }}</a></td>
+                    <td>{{ student.progress.apti.completed }}</td>
+                    <td>{{ student.progress.apti.total }}</td>
+                    <td>{{ student.progress.apti.percentage }}%</td>
+                    <td>{{ student.progress.dsa.completed }}</td>
+                    <td>{{ student.progress.dsa.total }}</td>
+                    <td>{{ student.progress.dsa.percentage }}%</td>
+                    <td>{{ student.progress.comm.completed }}</td>
+                    <td>{{ student.progress.comm.total }}</td>
+                    <td>{{ student.progress.comm.percentage }}%</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>

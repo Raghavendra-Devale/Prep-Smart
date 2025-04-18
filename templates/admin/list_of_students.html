@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+
+    <head>
+        <meta charset="utf-8" />
+        <link rel="apple-touch-icon" sizes="76x76" href="{{ url_for('static', filename='assets/img/apple-icon.png') }}">
+        <link rel="icon" type="image/png" href="{{ url_for('static', filename='assets/img/favicon.ico') }}">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+        <title>List of Students</title>
+        <meta content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, shrink-to-fit=no' name='viewport' />
+        <!--     Fonts and icons     -->
+        <link href="https://fonts.googleapis.com/css?family=Montserrat:400,700,200" rel="stylesheet" />
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/latest/css/font-awesome.min.css" />
+        <!-- CSS Files -->
+        <link href="{{ url_for('static', filename='assets/css/bootstrap.min.css') }}" rel="stylesheet" />
+        <link href="{{ url_for('static', filename='assets/css/light-bootstrap-dashboard.css') }}" rel="stylesheet" />
+        <!-- CSS Just for demo purpose, don't include it in your project -->
+        <link href="{{ url_for('static', filename='assets/css/demo.css') }}" rel="stylesheet" />
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+        <style>
+            .square-card {
+                height: 300px;  /* Increased from 250px */
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+                border: 1px solid #ddd;
+                padding: 20px;  /* Increased from 15px */
+                margin-bottom: 20px;  /* Increased from 15px */
+                text-align: center;
+                transition: all 0.3s ease;
+                background-color: #fff;  /* Changed from #f9f9f9 to white */
+                box-shadow: 0 4px 8px rgba(0,0,0,0.1);  /* Increased shadow */
+            }
+            .square-card:hover {
+                border-color: #4CAF50;  /* Changed from #007bff */
+                transform: translateY(-5px);  /* Changed scale to translateY for better hover effect */
+                box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+            }
+            .square-card h5 {
+                margin-bottom: 15px;  /* Increased from 10px */
+                color: #2c3e50;  /* Changed from #333 */
+                font-size: 1.5rem;  /* Increased from 1.25rem */
+                font-weight: 600;
+            }
+            .square-card p {
+                color: #34495e;  /* Changed from #666 */
+                margin-bottom: 20px;  /* Increased from 15px */
+                font-size: 1.2rem;  /* Increased from 1rem */
+                flex-grow: 1;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                display: -webkit-box;
+                -webkit-line-clamp: 3;
+                -webkit-box-orient: vertical;
+                line-height: 1.6;  /* Adjusted line height */
+            }
+            .square-card .btn {
+                width: 100%;
+                padding: 10px;  /* Increased from 8px */
+                font-size: 1rem;  /* Increased from 0.9rem */
+                font-weight: 500;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
+            .sidebar {
+                background: #1e1e2f;
+                height: 100vh;
+                width: 260px;
+                position: fixed;
+                top: 0;
+                left: 0;
+                z-index: 1000;
+            }
+            .sidebar-wrapper {
+                padding: 20px;
+            }
+            .logo {
+                padding: 15px;
+                margin-bottom: 20px;
+                text-align: center;
+                color: white;
+                font-size: 1.5rem;  /* Increased logo size */
+            }
+            .nav-item {
+                margin-bottom: 10px;
+            }
+            .nav-link {
+                color:rgb(255, 255, 255);
+                padding: 12px 15px;
+                opacity: 0.8;
+                display: flex;
+                align-items: center;
+                font-size: 1.1rem;  /* Increased nav link size */
+                transition: all 0.3s;
+            }
+            .nav-link:hover {
+                opacity: 1;
+                background: rgba(255,255,255,0.1);
+                border-radius: 4px;
+            }
+            .nav-link i {
+                margin-right: 15px;
+                font-size: 1.2rem;  /* Increased icon size */
+            }
+            .nav-item.active .nav-link {
+                background: #1d8cf8;
+                opacity: 1;
+                border-radius: 4px;
+            }
+            .navbar {
+                background-color:rgb(92, 92, 228); /* Match the sidebar color */
+                color: white; /* Change text color to white for better contrast */
+            }
+            .navbar .nav-link {
+                color: white; /* Change link color to white */
+            }
+            .navbar .nav-link:hover {
+                color: #4CAF50; /* Change hover color if needed */
+            }
+            .navbar .navbar-brand {
+                color: white; /* Change brand text color to white */
+            }
+            table {
+                    width: 100%;
+                    border-collapse: collapse;
+                }
+                th, td {
+                    border: 1px solid #ddd;
+                    padding: 8px;
+                    text-align: left;
+                }
+                th {
+                    background-color: #f4f4f4;
+                }
+        </style>
+            
+    </head>
+    
+    <body>
+        <div class="wrapper">
+            <div class="sidebar" data-color="blue" data-image="{{ url_for('static', filename='assets/img/sidebar-5.jpg') }}">
+                <div class="sidebar-wrapper">
+                    <div class="logo">
+                        <span>Prep_Smart</span>
+                    </div>
+                    <ul class="nav">
+                        <li class="nav-item active">
+                            <a class="nav-link" href="{{ url_for('admin_dashboard') }}">
+                                <i class="fa fa-dashboard"></i>
+                                <p>Dashboard</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('registered_students') }}">
+                                <i class="fa fa-users"></i>
+                                <p>Registered Students</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('companies') }}">
+                                <i class="fa fa-building"></i>
+                                <p>Companies</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('placed_students') }}">
+                                <i class="fa fa-graduation-cap"></i>
+                                <p>Students Placed</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('preparation_status') }}">
+                                <i class="fa fa-line-chart"></i>
+                                <p>Preparation Status</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('notifications') }}">
+                                <i class="fa fa-bell"></i>
+                                <p>Notifications</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('home') }}">
+                                <i class="fa fa-home"></i>
+                                <p>Home</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('logout') }}">
+                                <i class="fa fa-sign-out-alt"></i>
+                                <p>Logout</p>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="main-panel">
+                <!-- Navbar -->
+                <nav class="navbar navbar-expand-lg " color-on-scroll="500">
+                    <div class="container-fluid">
+                        <a class="navbar-brand" href="#pablo"> Dashboard </a>
+                        <button href="" class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" aria-controls="navigation-index" aria-expanded="false" aria-label="Toggle navigation">
+                            <span class="navbar-toggler-bar burger-lines"></span>
+                            <span class="navbar-toggler-bar burger-lines"></span>
+                            <span class="navbar-toggler-bar burger-lines"></span>
+                        </button>
+                        <div class="collapse navbar-collapse justify-content-end" id="navigation">
+                            <ul class="nav navbar-nav mr-auto">
+                                <li class="nav-item">
+                                    <a href="#" class="nav-link" data-toggle="dropdown">
+                                        <i class="nc-icon nc-palette"></i>
+                                        <span class="d-lg-none">Dashboard</span>
+                                    </a>
+                                </li>
+                                <!-- <li class="dropdown nav-item">
+                                    <a href="#" class="dropdown-toggle nav-link" data-toggle="dropdown">
+                                        <i class="nc-icon nc-planet"></i>
+                                        <span class="notification">5</span>
+                                        <span class="d-lg-none">Notification</span>
+                                    </a>
+                                    <ul class="dropdown-menu">
+                                        <a class="dropdown-item" href="#">Notification 1</a>
+                                        <a class="dropdown-item" href="#">Notification 2</a>
+                                        <a class="dropdown-item" href="#">Notification 3</a>
+                                        <a class="dropdown-item" href="#">Notification 4</a>
+                                        <a class="dropdown-item" href="#">Another notification</a>
+                                    </ul>
+                                </li> -->
+                                <li class="nav-item">
+                                    <a href="#" class="nav-link">
+                                        <i class="nc-icon nc-zoom-split"></i>
+                                        <span class="d-lg-block">&nbsp;Search</span>
+                                    </a>
+                                </li>
+                            </ul>
+                            <ul class="navbar-nav ml-auto">
+                                <li class="nav-item">
+                                    <a class="nav-link" href="#pablo">
+                                        <span class="no-icon">Account</span>
+                                    </a>
+                                </li>
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle" href="http://example.com" id="navbarDropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                        <span class="no-icon">Dropdown</span>
+                                    </a>
+                                    <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+                                        <a class="dropdown-item" href="#">Action</a>
+                                        <a class="dropdown-item" href="#">Another action</a>
+                                        <a class="dropdown-item" href="#">Something</a>
+                                        <a class="dropdown-item" href="#">Something else here</a>
+                                        <div class="divider"></div>
+                                        <a class="dropdown-item" href="#">Separated link</a>
+                                    </div>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="#pablo">
+                                        <span class="no-icon">Log out</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </nav>
+          
+</head>
+<body>
+    <h1>List of Students</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Course</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for student in students %}
+            <tr>
+                <td>{{ student.id }}</td>
+                <td>{{ student.name }}</td>
+                <td>{{ student.email }}</td>
+                <td>{{ student.course }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

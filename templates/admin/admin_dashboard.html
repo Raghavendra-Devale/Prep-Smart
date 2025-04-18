@@ -1,126 +1,452 @@
 <!DOCTYPE html>
+
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard</title>
+    <meta charset="utf-8" />
+    <link rel="apple-touch-icon" sizes="76x76" href="{{ url_for('static', filename='assets/img/apple-icon.png') }}">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='assets/img/favicon.ico') }}">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <title>Admin</title>
+    <meta content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, shrink-to-fit=no' name='viewport' />
+    <!--     Fonts and icons     -->
+    <link href="https://fonts.googleapis.com/css?family=Montserrat:400,700,200" rel="stylesheet" />
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/latest/css/font-awesome.min.css" />
+    <!-- CSS Files -->
+    <link href="{{ url_for('static', filename='assets/css/bootstrap.min.css') }}" rel="stylesheet" />
+    <link href="{{ url_for('static', filename='assets/css/light-bootstrap-dashboard.css') }}" rel="stylesheet" />
+    <!-- CSS Just for demo purpose, don't include it in your project -->
+    <link href="{{ url_for('static', filename='assets/css/demo.css') }}" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        body {
-            background: #f0f2f5;
-            min-height: 100vh;
-        }
-
-        .dashboard-container {
-            max-width: 1200px;
-            margin: 20px auto;
-            padding: 20px;
-        }
-
-        .header {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
+        .square-card {
+            height: 300px;  /* Increased from 250px */
             display: flex;
+            flex-direction: column;
             justify-content: space-between;
-            align-items: center;
+            border: 1px solid #ddd;
+            padding: 20px;  /* Increased from 15px */
+            margin-bottom: 20px;  /* Increased from 15px */
+            text-align: center;
+            transition: all 0.3s ease;
+            background-color: #fff;  /* Changed from #f9f9f9 to white */
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);  /* Increased shadow */
         }
-
-        .user-info {
-            color: #1a73e8;
+        .square-card:hover {
+            border-color: #4CAF50;  /* Changed from #007bff */
+            transform: translateY(-5px);  /* Changed scale to translateY for better hover effect */
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
         }
-
-        .logout-btn {
-            padding: 8px 16px;
-            background: #dc3545;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            text-decoration: none;
+        .square-card h5 {
+            margin-bottom: 15px;  /* Increased from 10px */
+            color: #2c3e50;  /* Changed from #333 */
+            font-size: 1.5rem;  /* Increased from 1.25rem */
+            font-weight: 600;
         }
-
-        .stats-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-bottom: 20px;
+        .square-card p {
+            color: #34495e;  /* Changed from #666 */
+            margin-bottom: 20px;  /* Increased from 15px */
+            font-size: 1.2rem;  /* Increased from 1rem */
+            flex-grow: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            line-height: 1.6;  /* Adjusted line height */
         }
-
-        .stat-card {
-            background: white;
+        .square-card .btn {
+            width: 100%;
+            padding: 10px;  /* Increased from 8px */
+            font-size: 1rem;  /* Increased from 0.9rem */
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .sidebar {
+            background: #1e1e2f;
+            height: 100vh;
+            width: 260px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1000;
+        }
+        .sidebar-wrapper {
             padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
-
-        .stat-card h3 {
-            color: #1a73e8;
+        .logo {
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+            color: white;
+            font-size: 1.5rem;  /* Increased logo size */
+        }
+        .nav-item {
             margin-bottom: 10px;
         }
-
-        .action-buttons {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
+        .nav-link {
+            color:rgb(255, 255, 255);
+            padding: 12px 15px;
+            opacity: 0.8;
+            display: flex;
+            align-items: center;
+            font-size: 1.1rem;  /* Increased nav link size */
+            transition: all 0.3s;
         }
-
-        .action-btn {
-            padding: 15px;
-            background: #1a73e8;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            text-align: center;
-            text-decoration: none;
-            font-weight: 500;
+        .nav-link:hover {
+            opacity: 1;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
         }
-
-        .action-btn:hover {
-            background: #1557b0;
+        .nav-link i {
+            margin-right: 15px;
+            font-size: 1.2rem;  /* Increased icon size */
+        }
+        .nav-item.active .nav-link {
+            background: #1d8cf8;
+            opacity: 1;
+            border-radius: 4px;
+        }
+        .navbar {
+            background-color:rgb(92, 92, 228); /* Match the sidebar color */
+            color: white; /* Change text color to white for better contrast */
+        }
+        .navbar .nav-link {
+            color: white; /* Change link color to white */
+        }
+        .navbar .nav-link:hover {
+            color: #4CAF50; /* Change hover color if needed */
+        }
+        .navbar .navbar-brand {
+            color: white; /* Change brand text color to white */
         }
     </style>
 </head>
+
 <body>
-    <div class="dashboard-container">
-        <div class="header">
-            <div class="user-info">
-                <h1>Welcome, {{ username }}</h1>
-                <p>Admin Dashboard</p>
+    <div class="wrapper">
+        <div class="sidebar" data-color="blue" data-image="{{ url_for('static', filename='assets/img/sidebar-5.jpg') }}">
+            <div class="sidebar-wrapper">
+                <div class="logo">
+                    <span>Prep_Smart</span>
+                </div>
+                <ul class="nav">
+                    <li class="nav-item active">
+                        <a class="nav-link" href="{{ url_for('admin_dashboard') }}">
+                            <i class="fa fa-dashboard"></i>
+                            <p>Dashboard</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('list_of_students') }}">
+                            <i class="fa fa-users"></i>
+                            <p>Registered Students</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('companies') }}">
+                            <i class="fa fa-building"></i>
+                            <p>Companies</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('placed_students') }}">
+                            <i class="fa fa-graduation-cap"></i>
+                            <p>Students Placed</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('all_students_progress') }}">
+                            <i class="fa fa-line-chart"></i>
+                            <p>Preparation Status</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('notifications') }}">
+                            <i class="fa fa-bell"></i>
+                            <p>Notifications</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('home') }}">
+                            <i class="fa fa-home"></i>
+                            <p>Home</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('logout') }}">
+                            <i class="fa fa-sign-out-alt"></i>
+                            <p>Logout</p>
+                        </a>
+                    </li>
+                </ul>
             </div>
-            <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
         </div>
-
-        <div class="stats-container">
-            <div class="stat-card">
-                <h3>Total Users</h3>
-                <p>{{ progress_summary.get('total_users', 0) }}</p>
+        <div class="main-panel">
+            <!-- Navbar -->
+            <nav class="navbar navbar-expand-lg " color-on-scroll="500">
+                <div class="container-fluid">
+                    <a class="navbar-brand" href="#pablo"> Dashboard </a>
+                    <button href="" class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" aria-controls="navigation-index" aria-expanded="false" aria-label="Toggle navigation">
+                        <span class="navbar-toggler-bar burger-lines"></span>
+                        <span class="navbar-toggler-bar burger-lines"></span>
+                        <span class="navbar-toggler-bar burger-lines"></span>
+                    </button>
+                    <div class="collapse navbar-collapse justify-content-end" id="navigation">
+                        <ul class="nav navbar-nav mr-auto">
+                            <li class="nav-item">
+                                <a href="#" class="nav-link" data-toggle="dropdown">
+                                    <i class="nc-icon nc-palette"></i>
+                                    <span class="d-lg-none">Dashboard</span>
+                                </a>
+                            </li>
+                            <!-- <li class="dropdown nav-item">
+                                <a href="#" class="dropdown-toggle nav-link" data-toggle="dropdown">
+                                    <i class="nc-icon nc-planet"></i>
+                                    <span class="notification">5</span>
+                                    <span class="d-lg-none">Notification</span>
+                                </a>
+                                <ul class="dropdown-menu">
+                                    <a class="dropdown-item" href="#">Notification 1</a>
+                                    <a class="dropdown-item" href="#">Notification 2</a>
+                                    <a class="dropdown-item" href="#">Notification 3</a>
+                                    <a class="dropdown-item" href="#">Notification 4</a>
+                                    <a class="dropdown-item" href="#">Another notification</a>
+                                </ul>
+                            </li> -->
+                            <li class="nav-item">
+                                <a href="#" class="nav-link">
+                                    <i class="nc-icon nc-zoom-split"></i>
+                                    <span class="d-lg-block">&nbsp;Search</span>
+                                </a>
+                            </li>
+                        </ul>
+                        <ul class="navbar-nav ml-auto">
+                            <li class="nav-item">
+                                <a class="nav-link" href="#pablo">
+                                    <span class="no-icon">Account</span>
+                                </a>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="http://example.com" id="navbarDropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    <span class="no-icon">Dropdown</span>
+                                </a>
+                                <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+                                    <a class="dropdown-item" href="#">Action</a>
+                                    <a class="dropdown-item" href="#">Another action</a>
+                                    <a class="dropdown-item" href="#">Something</a>
+                                    <a class="dropdown-item" href="#">Something else here</a>
+                                    <div class="divider"></div>
+                                    <a class="dropdown-item" href="#">Separated link</a>
+                                </div>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#pablo">
+                                    <span class="no-icon">Log out</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </nav>
+            <!-- End Navbar -->
+            <div class="content">
+                <div class="container-fluid">
+                    <div class="row">
+                        <div class="col-md-4">
+                           
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="square-card">
+                                    <h5>Placement Approval</h5>
+                                    <p>Review and approve student placements for upcoming recruitment cycles.</p>
+                                    <a href="{{ url_for('placement') }}" class="btn btn-primary">View Placements</a>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="square-card">
+                                    <h5>Company Registrations</h5>
+                                    <p>Manage and track incoming company recruitment registrations and requirements.</p>
+                                    <a href="{{ url_for('companies') }}" class="btn btn-success">View Registrations</a>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="square-card">
+                                    <h5>List of Students</h5>
+                                    <p>Total students registered for placement.</p>
+                                    <a href="{{ url_for('list_of_students') }}" class="btn btn-primary">View Students</a>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="square-card">
+                                    <h5>Student Placement Status</h5>
+                                    <p>Monitor current placement statistics and individual student placement progress.</p>
+                                    <a href="{{ url_for('student_status') }}" class="btn btn-info">View Status</a>
+                                </div>
+                            </div>
+                        
+                        <div class="col-md-4">
+                            <div class="square-card">
+                                <h5>Company Status</h5>
+                                <p>Utilize company resources by students.</p>
+                                <a href="{{ url_for('company_status') }}" class="btn btn-primary">View Students</a>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="square-card">
+                                <h5>Student_Progress</h5>
+                                <p>Progress of each student</p>
+                                <a href="{{ url_for('all_students_progress') }}" class="btn btn-info">View All Students Progress</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="stat-card">
-                <h3>Active Students</h3>
-                <p>{{ progress_summary.get('active_students', 0) }}</p>
-            </div>
-            <div class="stat-card">
-                <h3>Companies</h3>
-                <p>{{ progress_summary.get('companies', 0) }}</p>
-            </div>
-        </div>
-
-        <div class="action-buttons">
-            <a href="#" class="action-btn">Manage Users</a>
-            <a href="#" class="action-btn">View Reports</a>
-            <a href="#" class="action-btn">System Settings</a>
-            <a href="#" class="action-btn">View Analytics</a>
+            <footer class="footer">
+                <div class="container-fluid">
+                    <nav>
+                        <ul class="footer-menu">
+                            <li>
+                                <a href="#">
+                                    Home
+                                </a>
+                            </li>
+                            <li>
+                                <a href="#">
+                                    Company
+                                </a>
+                            </li>
+                            <li>
+                                <a href="#">
+                                    Portfolio
+                                </a>
+                            </li>
+                            <li>
+                                <a href="#">
+                                    Blog
+                                </a>
+                            </li>
+                        </ul>
+                        <p class="copyright text-center">
+                            ©
+                            <script>
+                                document.write(new Date().getFullYear())
+                            </script>
+                            <a href="#">SJMIT</a>, made with love for a better preperation
+                        </p>
+                    </nav>
+                </div>
+            </footer>
         </div>
     </div>
+    <!--   -->
+    <!-- <div class="fixed-plugin">
+    <div class="dropdown show-dropdown">
+        <a href="#" data-toggle="dropdown">
+            <i class="fa fa-cog fa-2x"> </i>
+        </a>
+
+        <ul class="dropdown-menu">
+			<li class="header-title"> Sidebar Style</li>
+            <li class="adjustments-line">
+                <a href="javascript:void(0)" class="switch-trigger">
+                    <p>Background Image</p>
+                    <label class="switch">
+                        <input type="checkbox" data-toggle="switch" checked="" data-on-color="primary" data-off-color="primary"><span class="toggle"></span>
+                    </label>
+                    <div class="clearfix"></div>
+                </a>
+            </li>
+            <li class="adjustments-line">
+                <a href="javascript:void(0)" class="switch-trigger background-color">
+                    <p>Filters</p>
+                    <div class="pull-right">
+                        <span class="badge filter badge-black" data-color="black"></span>
+                        <span class="badge filter badge-azure" data-color="azure"></span>
+                        <span class="badge filter badge-green" data-color="green"></span>
+                        <span class="badge filter badge-orange" data-color="orange"></span>
+                        <span class="badge filter badge-red" data-color="red"></span>
+                        <span class="badge filter badge-purple active" data-color="purple"></span>
+                    </div>
+                    <div class="clearfix"></div>
+                </a>
+            </li>
+            <li class="header-title">Sidebar Images</li>
+
+            <li class="active">
+                <a class="img-holder switch-trigger" href="javascript:void(0)">
+                    <img src="../assets/img/sidebar-1.jpg" alt="" />
+                </a>
+            </li>
+            <li>
+                <a class="img-holder switch-trigger" href="javascript:void(0)">
+                    <img src="../assets/img/sidebar-3.jpg" alt="" />
+                </a>
+            </li>
+            <li>
+                <a class="img-holder switch-trigger" href="javascript:void(0)">
+                    <img src="..//assets/img/sidebar-4.jpg" alt="" />
+                </a>
+            </li>
+            <li>
+                <a class="img-holder switch-trigger" href="javascript:void(0)">
+                    <img src="../assets/img/sidebar-5.jpg" alt="" />
+                </a>
+            </li>
+
+            <li class="button-container">
+                <div class="">
+                    <a href="http://www.creative-tim.com/product/light-bootstrap-dashboard" target="_blank" class="btn btn-info btn-block btn-fill">Download, it's free!</a>
+                </div>
+            </li>
+
+            <li class="header-title pro-title text-center">Want more components?</li>
+
+            <li class="button-container">
+                <div class="">
+                    <a href="http://www.creative-tim.com/product/light-bootstrap-dashboard-pro" target="_blank" class="btn btn-warning btn-block btn-fill">Get The PRO Version!</a>
+                </div>
+            </li>
+
+            <li class="header-title" id="sharrreTitle">Thank you for sharing!</li>
+
+            <li class="button-container">
+				<button id="twitter" class="btn btn-social btn-outline btn-twitter btn-round sharrre"><i class="fa fa-twitter"></i> · 256</button>
+                <button id="facebook" class="btn btn-social btn-outline btn-facebook btn-round sharrre"><i class="fa fa-facebook-square"></i> · 426</button>
+            </li>
+        </ul>
+    </div>
+</div>
+ -->
 </body>
+<!--   Core JS Files   -->
+<script src="{{ url_for('static', filename='assets/js/core/jquery.3.2.1.min.js') }}" type="text/javascript"></script>
+<script src="{{ url_for('static', filename='assets/js/core/popper.min.js') }}" type="text/javascript"></script>
+<script src="{{ url_for('static', filename='assets/js/core/bootstrap.min.js') }}" type="text/javascript"></script>
+<!--  Plugin for Switches, full documentation here: http://www.jque.re/plugins/version3/bootstrap.switch/ -->
+<script src="{{ url_for('static', filename='assets/js/plugins/bootstrap-switch.js') }}"></script>
+<!--  Google Maps Plugin    -->
+<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=YOUR_KEY_HERE"></script>
+<!--  Chartist Plugin  -->
+<script src="{{ url_for('static', filename='assets/js/plugins/chartist.min.js') }}"></script>
+<!--  Notifications Plugin    -->
+<script src="{{ url_for('static', filename='assets/js/plugins/bootstrap-notify.js') }}"></script>
+<!-- Control Center for Light Bootstrap Dashboard: scripts for the example pages etc -->
+<script src="{{ url_for('static', filename='assets/js/light-bootstrap-dashboard.js') }}" type="text/javascript"></script>
+<!-- Light Bootstrap Dashboard DEMO methods, don't include it in your project! -->
+<script src="{{ url_for('static', filename='assets/js/demo.js') }}"></script>
+<script type="text/javascript">
+    $(document).ready(function() {
+        // Javascript method's body can be found in assets/js/demos.js
+        demo.initDashboardPageCharts();
+
+        demo.showNotification();
+
+    });
+</script>
+
 </html>

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Resumes</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="mb-4">Resumes</h1>
+
+        <div class="row g-3">
+            <div class="col-md-4">
+                <div class="card p-3 shadow-sm">
+                    <h5>General Resume</h5>
+                    <div class="d-grid gap-2 mt-2">
+                        <a href="{{ url_for('static', filename='resume/resumeGeneral.pdf') }}" target="_blank" class="btn btn-primary">View Resume</a>
+                        <a href="{{ url_for('static', filename='resume/resumeGeneral.pdf') }}" download class="btn btn-secondary">Download Resume</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card p-3 shadow-sm">
+                    <h5>Java Resume</h5>
+                    <div class="d-grid gap-2 mt-2">
+                        <a href="{{ url_for('static', filename='resume/resumeJava.pdf') }}" target="_blank" class="btn btn-primary">View Resume</a>
+                        <a href="{{ url_for('static', filename='resume/resumeJava.pdf') }}" download class="btn btn-secondary">Download Resume</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card p-3 shadow-sm">
+                    <h5>Python Resume</h5>
+                    <div class="d-grid gap-2 mt-2">
+                        <a href="{{ url_for('static', filename='resume/resumePython.pdf') }}" target="_blank" class="btn btn-primary">View Resume</a>
+                        <a href="{{ url_for('static', filename='resume/resumePython.pdf') }}" download class="btn btn-secondary">Download Resume</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card p-3 shadow-sm">
+                    <h5>Sample Resume 1</h5>
+                    <div class="d-grid gap-2 mt-2">
+                        <a href="{{ url_for('static', filename='resume/sample1.pdf') }}" target="_blank" class="btn btn-primary">View Resume</a>
+                        <a href="{{ url_for('static', filename='resume/sample1.pdf') }}" download class="btn btn-secondary">Download Resume</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card p-3 shadow-sm">
+                    <h5>Sample Resume 2</h5>
+                    <div class="d-grid gap-2 mt-2">
+                        <a href="{{ url_for('static', filename='resume/sample2.pdf') }}" target="_blank" class="btn btn-primary">View Resume</a>
+                        <a href="{{ url_for('static', filename='resume/sample2.pdf') }}" download class="btn btn-secondary">Download Resume</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
